@@ -4,10 +4,10 @@ import com.smartcampus.booking.dto.BookingRequest;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.exception.ConflictException;
 import com.smartcampus.booking.exception.ResourceNotFoundException;
+import com.smartcampus.booking.exception.UnauthorizedException;
 import com.smartcampus.booking.model.Booking;
 import com.smartcampus.booking.model.BookingStatus;
 import com.smartcampus.booking.repository.BookingRepository;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +51,7 @@ public class BookingService {
         // Create new booking
         Booking booking = new Booking();
         booking.setResourceId(bookingRequest.getResourceId());
+        booking.setResourceName(bookingRequest.getResourceName());
         booking.setRequestedById(userId);
         booking.setRequestedByName(userName);
         booking.setStartTime(bookingRequest.getStartTime());
@@ -114,7 +115,7 @@ public class BookingService {
      * @param requestingUserId the ID of the user attempting to cancel
      * @return BookingResponse with CANCELLED status
      * @throws ResourceNotFoundException if booking not found
-     * @throws AccessDeniedException if user is not the owner of the booking
+     * @throws UnauthorizedException if user is not the owner of the booking
      * @throws IllegalStateException if booking is not APPROVED
      */
     public BookingResponse cancelBooking(String id, String requestingUserId) {
@@ -123,7 +124,7 @@ public class BookingService {
 
         // Check if the requesting user is the owner of the booking
         if (!booking.getRequestedById().equals(requestingUserId)) {
-            throw new AccessDeniedException("You can only cancel your own bookings");
+            throw new UnauthorizedException("You can only cancel your own bookings");
         }
 
         if (booking.getStatus() != BookingStatus.APPROVED) {

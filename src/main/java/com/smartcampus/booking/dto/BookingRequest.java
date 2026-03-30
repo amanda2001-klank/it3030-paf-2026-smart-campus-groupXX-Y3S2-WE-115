@@ -9,12 +9,12 @@ public class BookingRequest {
     @NotBlank(message = "Resource ID is required")
     private String resourceId;
 
+    private String resourceName;
+
     @NotNull(message = "Start time is required")
-    @Future(message = "Start time must be in the future")
     private LocalDateTime startTime;
 
     @NotNull(message = "End time is required")
-    @Future(message = "End time must be in the future")
     private LocalDateTime endTime;
 
     @NotBlank(message = "Purpose is required")
@@ -44,6 +44,14 @@ public class BookingRequest {
 
     public void setResourceId(String resourceId) {
         this.resourceId = resourceId;
+    }
+
+    public String getResourceName() {
+        return resourceName;
+    }
+
+    public void setResourceName(String resourceName) {
+        this.resourceName = resourceName;
     }
 
     public LocalDateTime getStartTime() {
