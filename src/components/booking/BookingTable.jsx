@@ -1,7 +1,16 @@
 import React from 'react';
 import StatusBadge from '../StatusBadge';
 
-const BookingTable = ({ bookings, onApprove, onReject, onCancel, isAdmin }) => {
+const BookingTable = ({ 
+  bookings, 
+  onApprove, 
+  onReject, 
+  onCancel, 
+  isAdmin,
+  isApproving = null,
+  isRejecting = null,
+  isCancelling = null
+}) => {
   // Format date and time from ISO format to "Oct 24, 2023 | 09:00 – 11:30"
   const formatDateTime = (startTime, endTime) => {
     const startDate = new Date(startTime);
@@ -32,15 +41,31 @@ const BookingTable = ({ bookings, onApprove, onReject, onCancel, isAdmin }) => {
         <div className="flex space-x-2">
           <button
             onClick={() => onApprove(booking.id)}
-            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+            disabled={isApproving === booking.id || isRejecting === booking.id}
+            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
           >
-            Approve
+            {isApproving === booking.id ? (
+              <>
+                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Approving...
+              </>
+            ) : (
+              '✓ Approve'
+            )}
           </button>
           <button
             onClick={() => onReject(booking.id)}
-            className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+            disabled={isApproving === booking.id || isRejecting === booking.id}
+            className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
           >
-            Reject
+            {isRejecting === booking.id ? (
+              <>
+                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Rejecting...
+              </>
+            ) : (
+              '✕ Reject'
+            )}
           </button>
         </div>
       );
@@ -51,9 +76,17 @@ const BookingTable = ({ bookings, onApprove, onReject, onCancel, isAdmin }) => {
       return (
         <button
           onClick={() => onCancel(booking.id)}
-          className="px-3 py-1 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors"
+          disabled={isCancelling === booking.id}
+          className="px-3 py-1 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
         >
-          Cancel
+          {isCancelling === booking.id ? (
+            <>
+              <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Cancelling...
+            </>
+          ) : (
+            '✕ Cancel'
+          )}
         </button>
       );
     }

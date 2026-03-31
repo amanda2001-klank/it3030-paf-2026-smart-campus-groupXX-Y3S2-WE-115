@@ -7,6 +7,7 @@ import StatusBadge from '../components/StatusBadge';
 import BookingTable from '../components/booking/BookingTable';
 import CreateBookingModal from '../components/booking/CreateBookingModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import SkeletonLoader from '../components/common/SkeletonLoader';
 import Toast from '../components/common/Toast';
 import * as bookingService from '../services/bookingService';
 
@@ -16,10 +17,13 @@ const BookingManagement = () => {
   const [activeMainTab, setActiveMainTab] = useState('requests');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isApproving, setIsApproving] = useState(null);
+  const [isRejecting, setIsRejecting] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(null);
 
   // Main navigation tabs
   const mainTabs = [
@@ -47,7 +51,7 @@ const BookingManagement = () => {
   // Fetch bookings based on active tab
   const loadBookings = async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       let response;
       if (activeTab === 'my') {
@@ -59,9 +63,40 @@ const BookingManagement = () => {
       } else {
         response = await bookingService.getAllBookings();
       }
-      setBookings(response.data);
+      setBookings(response.data || []);
     } catch (err) {
-      setError('Failed to load bookings. Please try again.');
+      // Detailed error handling for different types of failures
+      if (err.code === 'ECONNABORTED' || err.message === 'Network Error') {
+        setError({
+          type: 'connection',
+          title: '🌐 Connection Error',
+          message: 'Unable to connect to server. Please check your internet connection and try again.'
+        });
+      } else if (!err.response) {
+        setError({
+          type: 'connection',
+          title: '🌐 Server Unavailable',
+          message: 'The server is not responding. Please try again in a moment.'
+        });
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
+        setError({
+          type: 'auth',
+          title: '🔒 Access Denied',
+          message: 'You do not have permission to view these bookings.'
+        });
+      } else if (err.response?.status >= 500) {
+        setError({
+          type: 'server',
+          title: '⚠️ Server Error',
+          message: 'The server encountered an error. Please try again later.'
+        });
+      } else {
+        setError({
+          type: 'generic',
+          title: '❌ Error',
+          message: 'Failed to load bookings. Please try again.'
+        });
+      }
       console.error('Error loading bookings:', err);
     } finally {
       setLoading(false);
@@ -76,12 +111,26 @@ const BookingManagement = () => {
   // Handle booking form submission
   const handleBookingSubmit = async (formData) => {
     try {
+      // Validate date is not in the past
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        setToast({ 
+          message: '📅 Cannot book for past dates. Please select a future date.', 
+          type: 'error' 
+        });
+        return;
+      }
+
       // Combine date and time fields into ISO format
       const datetime = `${formData.date}T${formData.startTime}`;
       const endtime = `${formData.date}T${formData.endTime}`;
 
       const payload = {
         resourceId: formData.resourceId || formData.resourceName,
+        resourceName: formData.resourceName,
         startTime: datetime,
         endTime: endtime,
         purpose: formData.purpose,
@@ -89,28 +138,54 @@ const BookingManagement = () => {
       };
 
       await bookingService.createBooking(payload);
-      setToast({ message: 'Booking created successfully!', type: 'success' });
+      setToast({ message: '✅ Booking created successfully!', type: 'success' });
       setIsModalOpen(false);
       loadBookings(); // Refresh the list
     } catch (err) {
-      if (err.response?.status === 409) {
-        setToast({ message: 'This resource is already booked for the selected time', type: 'error' });
-      } else {
-        setToast({ message: 'Failed to create booking. Please try again.', type: 'error' });
-      }
       console.error('Error creating booking:', err);
+      
+      if (err.response?.status === 409) {
+        setToast({ 
+          message: '⚠️ This resource is already booked for the selected time. Please choose a different time or resource.', 
+          type: 'error' 
+        });
+      } else if (err.response?.status === 400) {
+        setToast({ 
+          message: '❌ Invalid booking data. Please check all fields and try again.', 
+          type: 'error' 
+        });
+      } else if (!err.response) {
+        setToast({ 
+          message: '🌐 Unable to connect to server. Please check your connection.', 
+          type: 'error' 
+        });
+      } else {
+        setToast({ 
+          message: '❌ Failed to create booking. Please try again.', 
+          type: 'error' 
+        });
+      }
     }
   };
 
   // Handle approve booking
   const handleApprove = async (id) => {
+    setIsApproving(id);
     try {
       await bookingService.approveBooking(id);
-      setToast({ message: 'Booking approved successfully!', type: 'success' });
+      setToast({ message: '✅ Booking approved successfully!', type: 'success' });
       loadBookings();
     } catch (err) {
-      setToast({ message: 'Failed to approve booking', type: 'error' });
       console.error('Error approving booking:', err);
+      if (!err.response) {
+        setToast({ message: '🌐 Unable to connect to server', type: 'error' });
+      } else if (err.response?.status === 404) {
+        setToast({ message: '❌ Booking not found', type: 'error' });
+      } else {
+        setToast({ message: '❌ Failed to approve booking. Please try again.', type: 'error' });
+      }
+    } finally {
+      setIsApproving(null);
     }
   };
 
@@ -119,13 +194,22 @@ const BookingManagement = () => {
     const reason = prompt('Please enter rejection reason:');
     if (!reason) return;
 
+    setIsRejecting(id);
     try {
       await bookingService.rejectBooking(id, reason);
-      setToast({ message: 'Booking rejected successfully!', type: 'success' });
+      setToast({ message: '✅ Booking rejected successfully!', type: 'success' });
       loadBookings();
     } catch (err) {
-      setToast({ message: 'Failed to reject booking', type: 'error' });
       console.error('Error rejecting booking:', err);
+      if (!err.response) {
+        setToast({ message: '🌐 Unable to connect to server', type: 'error' });
+      } else if (err.response?.status === 404) {
+        setToast({ message: '❌ Booking not found', type: 'error' });
+      } else {
+        setToast({ message: '❌ Failed to reject booking. Please try again.', type: 'error' });
+      }
+    } finally {
+      setIsRejecting(null);
     }
   };
 
@@ -133,17 +217,26 @@ const BookingManagement = () => {
   const handleCancel = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
 
+    setIsCancelling(id);
     try {
       await bookingService.cancelBooking(id);
-      setToast({ message: 'Booking cancelled successfully!', type: 'success' });
+      setToast({ message: '✅ Booking cancelled successfully!', type: 'success' });
       loadBookings();
     } catch (err) {
-      if (err.response?.status === 403) {
-        setToast({ message: 'You can only cancel your own bookings', type: 'error' });
-      } else {
-        setToast({ message: 'Failed to cancel booking', type: 'error' });
-      }
       console.error('Error cancelling booking:', err);
+      if (err.response?.status === 403) {
+        setToast({ message: '🔒 You can only cancel your own bookings', type: 'error' });
+      } else if (!err.response) {
+        setToast({ message: '🌐 Unable to connect to server', type: 'error' });
+      } else if (err.response?.status === 404) {
+        setToast({ message: '❌ Booking not found', type: 'error' });
+      } else if (err.response?.status === 400) {
+        setToast({ message: '❌ Cannot cancel booking in current status', type: 'error' });
+      } else {
+        setToast({ message: '❌ Failed to cancel booking. Please try again.', type: 'error' });
+      }
+    } finally {
+      setIsCancelling(null);
     }
   };
 
@@ -205,15 +298,102 @@ const BookingManagement = () => {
 
         {/* Bookings Table */}
         {loading ? (
-          <LoadingSpinner />
+          <div className="bg-white rounded-lg border border-gray-200">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Resource Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Requested By
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Date & Time
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Purpose
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(3)].map((_, idx) => (
+                  <tr key={idx} className="bg-white border-b border-gray-200 h-16">
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
-            <p className="text-red-700 font-medium">{error}</p>
+          <div className={`border rounded-lg p-6 mb-8 ${
+            error.type === 'connection' 
+              ? 'bg-orange-50 border-orange-200' 
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <h3 className={`text-lg font-bold mb-2 ${
+              error.type === 'connection' 
+                ? 'text-orange-900' 
+                : 'text-red-900'
+            }`}>
+              {error.title}
+            </h3>
+            <p className={`text-sm mb-4 ${
+              error.type === 'connection' 
+                ? 'text-orange-800' 
+                : 'text-red-800'
+            }`}>
+              {error.message}
+            </p>
             <button
               onClick={loadBookings}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+              className={`px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium ${
+                error.type === 'connection'
+                  ? 'bg-orange-600 hover:bg-orange-700'
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
-              Retry
+              🔄 Retry
+            </button>
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="text-5xl mb-4">📭</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No bookings found</h3>
+            <p className="text-gray-600 mb-6">
+              {activeTab === 'my' && "You haven't made any bookings yet."}
+              {activeTab === 'pending' && "No pending booking requests waiting for approval."}
+              {activeTab === 'approved' && "No approved bookings found."}
+              {activeTab === 'all' && "No bookings found. Create one to get started!"}
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Create Booking
             </button>
           </div>
         ) : (
@@ -223,6 +403,9 @@ const BookingManagement = () => {
             onReject={handleReject}
             onCancel={handleCancel}
             isAdmin={isAdmin}
+            isApproving={isApproving}
+            isRejecting={isRejecting}
+            isCancelling={isCancelling}
           />
         )}
 

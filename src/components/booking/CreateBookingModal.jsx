@@ -24,6 +24,15 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
 
     if (!formData.date) {
       newErrors.date = 'Date is required';
+    } else {
+      // Validate date is not in the past
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        newErrors.date = '📅 Cannot book for past dates';
+      }
     }
 
     if (!formData.startTime) {
@@ -42,6 +51,8 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
 
     if (!formData.purpose.trim()) {
       newErrors.purpose = 'Purpose is required';
+    } else if (formData.purpose.trim().length < 10) {
+      newErrors.purpose = 'Purpose must be at least 10 characters';
     }
 
     if (!formData.expectedAttendees) {
@@ -138,10 +149,12 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.resourceName}
                 onChange={handleChange}
                 placeholder="e.g., Auditorium A"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors ${
+                  errors.resourceName ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.resourceName && (
-                <p className="mt-1 text-xs text-red-600">{errors.resourceName}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.resourceName}</p>
               )}
             </div>
 
@@ -155,10 +168,13 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                min={new Date().toISOString().split('T')[0]}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors ${
+                  errors.date ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.date && (
-                <p className="mt-1 text-xs text-red-600">{errors.date}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.date}</p>
               )}
             </div>
 
@@ -172,10 +188,12 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors ${
+                  errors.startTime ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.startTime && (
-                <p className="mt-1 text-xs text-red-600">{errors.startTime}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.startTime}</p>
               )}
             </div>
 
@@ -189,10 +207,12 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors ${
+                  errors.endTime ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.endTime && (
-                <p className="mt-1 text-xs text-red-600">{errors.endTime}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.endTime}</p>
               )}
             </div>
 
@@ -207,10 +227,12 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={handleChange}
                 placeholder="Describe the purpose of booking"
                 rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors resize-none"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors resize-none ${
+                  errors.purpose ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.purpose && (
-                <p className="mt-1 text-xs text-red-600">{errors.purpose}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.purpose}</p>
               )}
             </div>
 
@@ -226,10 +248,12 @@ const CreateBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={handleChange}
                 min="1"
                 placeholder="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors ${
+                  errors.expectedAttendees ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
               {errors.expectedAttendees && (
-                <p className="mt-1 text-xs text-red-600">{errors.expectedAttendees}</p>
+                <p className="mt-1 text-xs text-red-600">❌ {errors.expectedAttendees}</p>
               )}
             </div>
           </form>

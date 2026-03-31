@@ -1,0 +1,377 @@
+{
+  "info": {
+    "name": "Smart Campus - Booking Management API",
+    "description": "Complete Postman collection for testing the booking management module with all 10 test cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": []
+  },
+  "item": [
+    {
+      "name": "1. Create Booking - Success",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "user123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Name",
+            "value": "John Doe",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceId\": \"res1\",\n  \"resourceName\": \"Auditorium A\",\n  \"startTime\": \"2026-05-01T09:00:00\",\n  \"endTime\": \"2026-05-01T11:00:00\",\n  \"purpose\": \"Workshop\",\n  \"expectedAttendees\": 50\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/bookings",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings"]
+        },
+        "description": "Create a new booking - Expected 201\nThe system will assign a unique booking ID and set status to PENDING"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Create Booking - Conflict (Overlapping Time)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "user123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Name",
+            "value": "John Doe",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceId\": \"res1\",\n  \"resourceName\": \"Auditorium A\",\n  \"startTime\": \"2026-05-01T09:00:00\",\n  \"endTime\": \"2026-05-01T11:00:00\",\n  \"purpose\": \"Workshop\",\n  \"expectedAttendees\": 50\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/bookings",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings"]
+        },
+        "description": "Attempt to create a booking for the same resource at the same time\nExpected 409 CONFLICT - \"Resource already booked during this time period\""
+      },
+      "response": []
+    },
+    {
+      "name": "3. Get All Bookings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "admin123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "ADMIN",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings"]
+        },
+        "description": "Retrieve all bookings from the system\nExpected 200 - Array of all bookings with various statuses"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Bookings - Filtered by Status (PENDING)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "admin123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "ADMIN",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings?status=PENDING",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings"],
+          "query": [
+            {
+              "key": "status",
+              "value": "PENDING"
+            }
+          ]
+        },
+        "description": "Retrieve only PENDING bookings (awaiting admin approval)\nExpected 200 - Filtered array with only PENDING status bookings"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get My Bookings",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "user123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings/my",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings", "my"]
+        },
+        "description": "Retrieve bookings for the authenticated user only\nExpected 200 - Array of user's bookings (filtered by X-User-Id)"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Approve Booking",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "admin123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "ADMIN",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings/{{bookingId}}/approve",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings", "{{bookingId}}", "approve"]
+        },
+        "description": "Approve a PENDING booking\nReplace {{bookingId}} with actual booking ID from Create Booking response\nExpected 200 - Booking with status changed to APPROVED"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Reject Booking",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "admin123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "ADMIN",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Conflicting university event\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/bookings/{{bookingId}}/reject",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings", "{{bookingId}}", "reject"]
+        },
+        "description": "Reject a PENDING booking with a reason\nReplace {{bookingId}} with actual booking ID\nExpected 200 - Booking with status changed to REJECTED\nReason will be stored for the user's reference"
+      },
+      "response": []
+    },
+    {
+      "name": "8. Cancel Booking - Own Booking (Authorized)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "user123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings/{{bookingId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings", "{{bookingId}}"]
+        },
+        "description": "Cancel a user's own APPROVED booking\nReplace {{bookingId}} with actual booking ID\nExpected 200 - Booking with status changed to CANCELLED\nUser can only cancel their own APPROVED bookings"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Cancel Booking - Wrong User (Unauthorized)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "wronguser",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/api/bookings/{{bookingId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings", "{{bookingId}}"]
+        },
+        "description": "Attempt to cancel another user's booking\nReplace {{bookingId}} with actual booking ID\nExpected 403 FORBIDDEN - \"You can only cancel your own bookings\"\nDemonstrates authorization check"
+      },
+      "response": []
+    },
+    {
+      "name": "10. Create Booking - Missing Required Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Id",
+            "value": "user123",
+            "type": "text"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "USER",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"resourceId\": \"res1\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/bookings",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "bookings"]
+        },
+        "description": "Attempt to create a booking with missing required fields\nExpected 400 BAD REQUEST\nResponse should contain field validation errors:\n- \"resourceName is required\"\n- \"startTime is required\"\n- \"endTime is required\"\n- \"purpose is required\"\n- \"expectedAttendees is required\""
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "bookingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
