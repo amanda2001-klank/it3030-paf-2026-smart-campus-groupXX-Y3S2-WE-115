@@ -1,0 +1,652 @@
+{
+  "info": {
+    "_postman_id": "ab5c25aa-4f99-47d2-956d-7a4e89b97f4d",
+    "name": "Smart Campus - Facilities & Assets Catalogue",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "CRUD, search, filter, and pagination requests for Module A."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "mockUserId",
+      "value": "asset-manager-001"
+    },
+    {
+      "key": "mockUserName",
+      "value": "Mock Asset Manager"
+    },
+    {
+      "key": "mockRole",
+      "value": "ASSET_MANAGER"
+    },
+    {
+      "key": "locationId",
+      "value": ""
+    },
+    {
+      "key": "assetTypeId",
+      "value": ""
+    },
+    {
+      "key": "assetId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Create Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('locationId', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"building\": \"Engineering Block A\",\n  \"floor\": \"3\",\n  \"roomCode\": \"ENG-A-301\",\n  \"locationName\": \"Advanced Computing Lab\",\n  \"address\": \"Smart Campus, Main Road, Colombo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/locations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "locations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Locations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/locations?query=Engineering&page=0&size=10&sortBy=createdAt&sortDir=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "locations"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "Engineering"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Location By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/locations/{{locationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "locations",
+                "{{locationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Location",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"building\": \"Engineering Block A\",\n  \"floor\": \"3\",\n  \"roomCode\": \"ENG-A-301\",\n  \"locationName\": \"Advanced Computing Laboratory\",\n  \"address\": \"Smart Campus, Main Road, Colombo 03\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/locations/{{locationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "locations",
+                "{{locationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Location",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/locations/{{locationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "locations",
+                "{{locationId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asset Types",
+      "item": [
+        {
+          "name": "Create Asset Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('assetTypeId', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"LECTURE_HALL\",\n  \"name\": \"Lecture Hall\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/asset-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "asset-types"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Asset Types",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/asset-types?query=LECTURE&page=0&size=10&sortBy=name&sortDir=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "asset-types"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "LECTURE"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "name"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Asset Type By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/asset-types/{{assetTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "asset-types",
+                "{{assetTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Asset Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"LECTURE_HALL\",\n  \"name\": \"Lecture Hall Resource\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/asset-types/{{assetTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "asset-types",
+                "{{assetTypeId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Asset Type",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/asset-types/{{assetTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "asset-types",
+                "{{assetTypeId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assets",
+      "item": [
+        {
+          "name": "Create Asset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('assetId', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetCode\": \"LH-301\",\n  \"assetName\": \"Lecture Hall 301\",\n  \"assetTypeId\": \"{{assetTypeId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"capacity\": 120,\n  \"description\": \"Main lecture hall with projector and audio support\",\n  \"status\": \"ACTIVE\",\n  \"isBookable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Assets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets?assetTypeId={{assetTypeId}}&building=Engineering&status=ACTIVE&minCapacity=50&page=0&size=10&sortBy=createdAt&sortDir=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets"
+              ],
+              "query": [
+                {
+                  "key": "assetTypeId",
+                  "value": "{{assetTypeId}}"
+                },
+                {
+                  "key": "building",
+                  "value": "Engineering"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "50"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Assets By Text",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets?query=Lecture&page=0&size=10&sortBy=assetName&sortDir=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "Lecture"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "assetName"
+                },
+                {
+                  "key": "sortDir",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Asset By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets",
+                "{{assetId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Asset",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetCode\": \"LH-301\",\n  \"assetName\": \"Lecture Hall 301 - Updated\",\n  \"assetTypeId\": \"{{assetTypeId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"capacity\": 140,\n  \"description\": \"Updated lecture hall with improved seating and audio support\",\n  \"status\": \"MAINTENANCE\",\n  \"isBookable\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets",
+                "{{assetId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Asset",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets",
+                "{{assetId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
