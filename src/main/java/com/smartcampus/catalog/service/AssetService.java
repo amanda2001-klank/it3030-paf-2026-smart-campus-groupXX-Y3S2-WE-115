@@ -8,6 +8,7 @@ import com.smartcampus.catalog.dto.AssetResponse;
 import com.smartcampus.catalog.dto.AssetSearchRequest;
 import com.smartcampus.catalog.dto.PageResponse;
 import com.smartcampus.catalog.model.Asset;
+import com.smartcampus.catalog.model.AssetMedia;
 import com.smartcampus.catalog.model.AssetStatus;
 import com.smartcampus.catalog.model.AssetType;
 import com.smartcampus.catalog.model.Location;
@@ -23,6 +24,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,19 +47,23 @@ public class AssetService {
     private final AssetRepository assetRepository;
     private final AssetTypeRepository assetTypeRepository;
     private final LocationRepository locationRepository;
+    private final AssetMediaStorageService assetMediaStorageService;
     private final MongoTemplate mongoTemplate;
 
     public AssetService(AssetRepository assetRepository,
                         AssetTypeRepository assetTypeRepository,
                         LocationRepository locationRepository,
+                        AssetMediaStorageService assetMediaStorageService,
                         MongoTemplate mongoTemplate) {
         this.assetRepository = assetRepository;
         this.assetTypeRepository = assetTypeRepository;
         this.locationRepository = locationRepository;
+        this.assetMediaStorageService = assetMediaStorageService;
         this.mongoTemplate = mongoTemplate;
     }
 
-    public AssetResponse createAsset(AssetRequest request, MockUserContext currentUser) {
+    public AssetResponse createAsset(AssetRequest request, MockUserContext currentUser, List<MultipartFile> files) {
+        List<MultipartFile> normalizedFiles = assetMediaStorageService.normalizeFiles(files);
         String normalizedAssetCode = normalizeAssetCode(request.getAssetCode());
         if (assetRepository.existsByAssetCodeIgnoreCase(normalizedAssetCode)) {
             throw new ConflictException("Asset code already exists: " + normalizedAssetCode);
@@ -74,7 +80,18 @@ public class AssetService {
         }
 
         Asset savedAsset = assetRepository.save(asset);
-        return AssetResponse.fromAsset(savedAsset, assetType, location);
+        try {
+            List<AssetMedia> media = assetMediaStorageService.saveMediaFiles(
+                    savedAsset.getId(),
+                    normalizedFiles,
+                    currentUser.getUserId()
+            );
+            return AssetResponse.fromAsset(savedAsset, assetType, location, media);
+        } catch (RuntimeException ex) {
+            assetMediaStorageService.deleteAllMediaForAsset(savedAsset.getId());
+            assetRepository.deleteById(savedAsset.getId());
+            throw ex;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -162,11 +179,14 @@ public class AssetService {
         Asset asset = getAssetEntity(id);
         AssetType assetType = getAssetTypeById(asset.getAssetTypeId());
         Location location = getLocationById(asset.getLocationId());
-        return AssetResponse.fromAsset(asset, assetType, location);
+        List<AssetMedia> media = assetMediaStorageService.getMediaByAssetId(asset.getId());
+        return AssetResponse.fromAsset(asset, assetType, location, media);
     }
 
-    public AssetResponse updateAsset(String id, AssetRequest request) {
+    public AssetResponse updateAsset(String id, AssetRequest request, String removeMediaIds, MockUserContext currentUser,
+                                     List<MultipartFile> files) {
         Asset asset = getAssetEntity(id);
+        List<MultipartFile> normalizedFiles = assetMediaStorageService.normalizeFiles(files);
         String normalizedAssetCode = normalizeAssetCode(request.getAssetCode());
         if (assetRepository.existsByAssetCodeIgnoreCaseAndIdNot(normalizedAssetCode, asset.getId())) {
             throw new ConflictException("Asset code already exists: " + normalizedAssetCode);
@@ -180,8 +200,30 @@ public class AssetService {
             asset.setIsBookable(asset.getIsBookable() != null ? asset.getIsBookable() : Boolean.TRUE);
         }
 
+        int finalMediaCount = assetMediaStorageService.calculateFinalMediaCount(asset.getId(), removeMediaIds, normalizedFiles);
+        if (finalMediaCount > AssetMediaStorageService.MAX_MEDIA_FILES_PER_ASSET) {
+            throw new BadRequestException("An asset can have at most "
+                    + AssetMediaStorageService.MAX_MEDIA_FILES_PER_ASSET + " media files");
+        }
+        if (finalMediaCount < 0) {
+            throw new BadRequestException("removeMediaIds contains more items than the asset currently has");
+        }
+
         Asset updatedAsset = assetRepository.save(asset);
-        return AssetResponse.fromAsset(updatedAsset, assetType, location);
+        List<AssetMedia> uploadedMedia = assetMediaStorageService.saveMediaFiles(
+                asset.getId(),
+                normalizedFiles,
+                currentUser.getUserId()
+        );
+        try {
+            assetMediaStorageService.removeSelectedMedia(asset.getId(), removeMediaIds);
+        } catch (RuntimeException ex) {
+            assetMediaStorageService.deleteMediaEntries(uploadedMedia);
+            throw ex;
+        }
+
+        List<AssetMedia> allMedia = assetMediaStorageService.getMediaByAssetId(asset.getId());
+        return AssetResponse.fromAsset(updatedAsset, assetType, location, allMedia);
     }
 
     public void deleteAsset(String id) {
@@ -189,6 +231,7 @@ public class AssetService {
         if (!assetRepository.existsById(validatedId)) {
             throw new ResourceNotFoundException("Asset not found with id: " + validatedId);
         }
+        assetMediaStorageService.deleteAllMediaForAsset(validatedId);
         assetRepository.deleteById(validatedId);
     }
 
@@ -248,7 +291,9 @@ public class AssetService {
 
         Set<String> assetTypeIds = new HashSet<>();
         Set<String> locationIds = new HashSet<>();
+        Set<String> assetIds = new HashSet<>();
         for (Asset asset : assets) {
+            assetIds.add(asset.getId());
             if (asset.getAssetTypeId() != null) {
                 assetTypeIds.add(asset.getAssetTypeId());
             }
@@ -265,11 +310,14 @@ public class AssetService {
         StreamSupport.stream(locationRepository.findAllById(locationIds).spliterator(), false)
                 .forEach(location -> locationsById.put(location.getId(), location));
 
+        Map<String, List<AssetMedia>> mediaByAssetId = assetMediaStorageService.getMediaByAssetIds(assetIds);
+
         return assets.stream()
                 .map(asset -> AssetResponse.fromAsset(
                         asset,
                         assetTypesById.get(asset.getAssetTypeId()),
-                        locationsById.get(asset.getLocationId())
+                        locationsById.get(asset.getLocationId()),
+                        mediaByAssetId.getOrDefault(asset.getId(), List.of())
                 ))
                 .collect(Collectors.toList());
     }
