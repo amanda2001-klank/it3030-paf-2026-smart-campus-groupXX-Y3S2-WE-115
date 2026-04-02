@@ -3,6 +3,7 @@ package com.smartcampus.catalog.controller;
 import com.smartcampus.catalog.dto.AssetRequest;
 import com.smartcampus.catalog.dto.AssetResponse;
 import com.smartcampus.catalog.dto.AssetSearchRequest;
+import com.smartcampus.catalog.dto.AssetListRequest;
 import com.smartcampus.catalog.dto.PageResponse;
 import com.smartcampus.catalog.security.MockUserContext;
 import com.smartcampus.catalog.security.MockUserRole;
@@ -45,6 +46,11 @@ public class AssetController {
     @GetMapping
     public ResponseEntity<PageResponse<AssetResponse>> searchAssets(@Valid @ModelAttribute AssetSearchRequest request) {
         return ResponseEntity.ok(assetService.searchAssets(request));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<PageResponse<AssetResponse>> getAllAssets(@Valid @ModelAttribute AssetListRequest request) {
+        return ResponseEntity.ok(assetService.getAllAssets(request));
     }
 
     @GetMapping("/{id}")
