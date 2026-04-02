@@ -4,12 +4,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.validation.BindException;
 import jakarta.validation.ConstraintViolationException;
 
 import java.util.ArrayList;
@@ -64,21 +68,25 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, WebRequest request) {
-        List<Map<String, String>> fieldErrors = new ArrayList<>();
-
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
-            Map<String, String> errorMap = new HashMap<>();
-            errorMap.put("field", error.getField());
-            errorMap.put("message", error.getDefaultMessage());
-            errorMap.put("rejectedValue", error.getRejectedValue() != null ? error.getRejectedValue().toString() : "null");
-            fieldErrors.add(errorMap);
-        });
-
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Failed",
                 "Invalid input parameters",
-                fieldErrors
+                buildFieldErrors(ex.getBindingResult())
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle form-data/model attribute binding validation errors
+     */
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ErrorResponse> handleBindException(BindException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation Failed",
+                "Invalid input parameters",
+                buildFieldErrors(ex.getBindingResult())
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
@@ -172,6 +180,32 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle multipart upload size errors
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "Payload Too Large",
+                "Uploaded file exceeds the configured maximum upload size"
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * Handle malformed multipart requests
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleMultipartException(MultipartException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Multipart request is invalid: " + ex.getMessage()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
      * Handle IllegalStateException
      */
     @ExceptionHandler(IllegalStateException.class)
@@ -195,5 +229,17 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred: " + ex.getMessage()
         );
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private List<Map<String, String>> buildFieldErrors(BindingResult bindingResult) {
+        List<Map<String, String>> fieldErrors = new ArrayList<>();
+        bindingResult.getFieldErrors().forEach(error -> {
+            Map<String, String> errorMap = new HashMap<>();
+            errorMap.put("field", error.getField());
+            errorMap.put("message", error.getDefaultMessage());
+            errorMap.put("rejectedValue", error.getRejectedValue() != null ? error.getRejectedValue().toString() : "null");
+            fieldErrors.add(errorMap);
+        });
+        return fieldErrors;
     }
 }
