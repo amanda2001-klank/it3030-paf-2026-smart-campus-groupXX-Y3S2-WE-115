@@ -33,6 +33,10 @@
     {
       "key": "assetId",
       "value": ""
+    },
+    {
+      "key": "assetMediaId",
+      "value": ""
     }
   ],
   "item": [
@@ -423,6 +427,9 @@
                   "if (pm.response.code === 201) {",
                   "  const data = pm.response.json();",
                   "  pm.collectionVariables.set('assetId', data.id);",
+                  "  if (data.media && data.media.length > 0) {",
+                  "    pm.collectionVariables.set('assetMediaId', data.media[0].id);",
+                  "  }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -432,10 +439,6 @@
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "X-User-Id",
                 "value": "{{mockUserId}}"
@@ -450,8 +453,69 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"assetCode\": \"LH-301\",\n  \"assetName\": \"Lecture Hall 301\",\n  \"assetTypeId\": \"{{assetTypeId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"capacity\": 120,\n  \"description\": \"Main lecture hall with projector and audio support\",\n  \"status\": \"ACTIVE\",\n  \"isBookable\": true\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "assetCode",
+                  "value": "LH-301",
+                  "type": "text"
+                },
+                {
+                  "key": "assetName",
+                  "value": "Lecture Hall 301",
+                  "type": "text"
+                },
+                {
+                  "key": "assetTypeId",
+                  "value": "{{assetTypeId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "locationId",
+                  "value": "{{locationId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "capacity",
+                  "value": "120",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Main lecture hall with projector and audio support",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "type": "text"
+                },
+                {
+                  "key": "isBookable",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets",
@@ -558,6 +622,22 @@
         },
         {
           "name": "Get Asset By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.media && data.media.length > 0) {",
+                  "    pm.collectionVariables.set('assetMediaId', data.media[0].id);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
@@ -580,10 +660,6 @@
             "method": "PUT",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
                 "key": "X-User-Id",
                 "value": "{{mockUserId}}"
               },
@@ -597,8 +673,75 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"assetCode\": \"LH-301\",\n  \"assetName\": \"Lecture Hall 301 - Updated\",\n  \"assetTypeId\": \"{{assetTypeId}}\",\n  \"locationId\": \"{{locationId}}\",\n  \"capacity\": 140,\n  \"description\": \"Updated lecture hall with improved seating and audio support\",\n  \"status\": \"MAINTENANCE\",\n  \"isBookable\": false\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "assetCode",
+                  "value": "LH-301",
+                  "type": "text"
+                },
+                {
+                  "key": "assetName",
+                  "value": "Lecture Hall 301 - Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "assetTypeId",
+                  "value": "{{assetTypeId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "locationId",
+                  "value": "{{locationId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "capacity",
+                  "value": "140",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated lecture hall with improved seating and audio support",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "MAINTENANCE",
+                  "type": "text"
+                },
+                {
+                  "key": "isBookable",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "removeMediaIds",
+                  "value": "{{assetMediaId}}",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
