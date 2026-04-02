@@ -2,10 +2,14 @@ package com.smartcampus.catalog.dto;
 
 import com.smartcampus.catalog.model.Asset;
 import com.smartcampus.catalog.model.AssetStatus;
+import com.smartcampus.catalog.model.AssetMedia;
 import com.smartcampus.catalog.model.AssetType;
 import com.smartcampus.catalog.model.Location;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class AssetResponse {
 
@@ -21,10 +25,11 @@ public class AssetResponse {
     private AssetStatus status;
     private Boolean isBookable;
     private String createdById;
+    private List<AssetMediaResponse> media;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static AssetResponse fromAsset(Asset asset, AssetType assetType, Location location) {
+    public static AssetResponse fromAsset(Asset asset, AssetType assetType, Location location, List<AssetMedia> media) {
         AssetResponse response = new AssetResponse();
         response.setId(asset.getId());
         response.setAssetCode(asset.getAssetCode());
@@ -38,6 +43,9 @@ public class AssetResponse {
         response.setStatus(asset.getStatus());
         response.setIsBookable(asset.getIsBookable());
         response.setCreatedById(asset.getCreatedById());
+        response.setMedia(media == null
+                ? Collections.emptyList()
+                : media.stream().map(AssetMediaResponse::fromAssetMedia).collect(Collectors.toList()));
         response.setCreatedAt(asset.getCreatedAt());
         response.setUpdatedAt(asset.getUpdatedAt());
         return response;
@@ -137,6 +145,14 @@ public class AssetResponse {
 
     public void setCreatedById(String createdById) {
         this.createdById = createdById;
+    }
+
+    public List<AssetMediaResponse> getMedia() {
+        return media;
+    }
+
+    public void setMedia(List<AssetMediaResponse> media) {
+        this.media = media;
     }
 
     public LocalDateTime getCreatedAt() {
