@@ -909,6 +909,77 @@
           }
         },
         {
+          "name": "Preview Asset Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}/media/{{assetMediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets",
+                "{{assetId}}",
+                "media",
+                "{{assetMediaId}}"
+              ]
+            },
+            "description": "Returns the stored image or video inline for preview."
+          }
+        },
+        {
+          "name": "Download Asset Media",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}/media/{{assetMediaId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalog",
+                "assets",
+                "{{assetId}}",
+                "media",
+                "{{assetMediaId}}",
+                "download"
+              ]
+            },
+            "description": "Returns the stored image or video as a downloadable attachment."
+          }
+        },
+        {
           "name": "Update Asset",
           "request": {
             "method": "PUT",
