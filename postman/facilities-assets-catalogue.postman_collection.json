@@ -100,6 +100,20 @@
           "name": "List Locations",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/locations?query=Engineering&page=0&size=10&sortBy=createdAt&sortDir=desc",
               "host": [
@@ -139,6 +153,20 @@
           "name": "Get Location By ID",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/locations/{{locationId}}",
               "host": [
@@ -287,6 +315,20 @@
           "name": "List Asset Types",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/asset-types?query=LECTURE&page=0&size=10&sortBy=name&sortDir=asc",
               "host": [
@@ -326,6 +368,20 @@
           "name": "Get Asset Type By ID",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/asset-types/{{assetTypeId}}",
               "host": [
@@ -534,6 +590,20 @@
           "name": "List All Assets",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/all?page=0&size=10&sortBy=createdAt&sortDir=desc",
               "host": [
@@ -570,6 +640,20 @@
           "name": "List Assets",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?assetTypeId={{assetTypeId}}&building=Engineering&status=ACTIVE&minCapacity=50&page=0&size=10&sortBy=createdAt&sortDir=desc",
               "host": [
@@ -621,6 +705,20 @@
           "name": "Search Assets By Text",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=Lecture&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -660,6 +758,20 @@
           "name": "Search Assets By Asset Type Text",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=LECTURE_HALL&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -699,6 +811,20 @@
           "name": "Search Assets By Capacity Text",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=120&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -754,6 +880,20 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{mockUserId}}"
+              },
+              {
+                "key": "X-User-Name",
+                "value": "{{mockUserName}}"
+              },
+              {
+                "key": "X-User-Role",
+                "value": "{{mockRole}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
               "host": [
