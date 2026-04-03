@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { getMockUser } from '../utils/mockAuth';
 
+export const API_BASE_URL = 'http://localhost:8080';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
