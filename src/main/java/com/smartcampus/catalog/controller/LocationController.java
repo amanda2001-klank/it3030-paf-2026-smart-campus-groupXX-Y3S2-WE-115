@@ -38,12 +38,22 @@ public class LocationController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<LocationResponse>> searchLocations(@Valid @ModelAttribute LocationSearchRequest request) {
+    public ResponseEntity<PageResponse<LocationResponse>> searchLocations(
+            @Valid @ModelAttribute LocationSearchRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Name", required = false) String userName,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        requireManagerAccess(userId, userName, userRole);
         return ResponseEntity.ok(locationService.searchLocations(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<LocationResponse> getLocationById(@PathVariable String id) {
+    public ResponseEntity<LocationResponse> getLocationById(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Name", required = false) String userName,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+        requireManagerAccess(userId, userName, userRole);
         return ResponseEntity.ok(locationService.getLocationById(id));
     }
 
