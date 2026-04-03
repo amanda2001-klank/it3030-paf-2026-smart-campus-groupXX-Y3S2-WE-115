@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Toast from '../components/common/Toast';
@@ -223,6 +224,7 @@ const hasAssetSearchFilters = (filters) =>
   );
 
 const AssetCataloguePage = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('assets');
   const [toast, setToast] = useState(null);
   const [overview, setOverview] = useState({
@@ -264,11 +266,11 @@ const AssetCataloguePage = () => {
   const [assetTypeSubmitting, setAssetTypeSubmitting] = useState(false);
   const [assetTypeActionLoading, setAssetTypeActionLoading] = useState('');
 
-  const currentUser = useMemo(() => getMockUser(), []);
+  const [currentUser, setCurrentUser] = useState(() => ensureMockUser());
   const hasCatalogueAccess = canManageCatalogue(currentUser.userRole);
 
   useEffect(() => {
-    ensureMockUser();
+    setCurrentUser(ensureMockUser());
   }, []);
 
   const loadOverview = async () => {
@@ -492,6 +494,10 @@ const AssetCataloguePage = () => {
     } finally {
       setAssetActionLoading('');
     }
+  };
+
+  const handleOpenAssetRecord = (assetId) => {
+    navigate(`/assets/${assetId}`);
   };
 
   const handleEditLocation = async (locationId) => {
@@ -822,7 +828,18 @@ const AssetCataloguePage = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {assetPage.content.map((asset) => (
-                      <tr key={asset.id} className="hover:bg-gray-50">
+                      <tr
+                        key={asset.id}
+                        className="cursor-pointer hover:bg-blue-50"
+                        onClick={() => handleOpenAssetRecord(asset.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            handleOpenAssetRecord(asset.id);
+                          }
+                        }}
+                        tabIndex={0}
+                      >
                         <td className="px-6 py-4 align-top">
                           <p className="text-sm font-semibold text-gray-900">{asset.assetName}</p>
                           <p className="mt-1 text-xs text-gray-500">{asset.assetCode}</p>
@@ -863,7 +880,20 @@ const AssetCataloguePage = () => {
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              onClick={() => handleEditAsset(asset.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOpenAssetRecord(asset.id);
+                              }}
+                              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-100"
+                            >
+                              Open
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleEditAsset(asset.id);
+                              }}
                               disabled={Boolean(assetActionLoading)}
                               className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                             >
@@ -871,7 +901,10 @@ const AssetCataloguePage = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteAsset(asset.id, asset.assetName)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteAsset(asset.id, asset.assetName);
+                              }}
                               disabled={Boolean(assetActionLoading)}
                               className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
