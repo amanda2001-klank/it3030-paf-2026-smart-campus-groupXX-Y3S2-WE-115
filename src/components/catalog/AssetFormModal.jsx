@@ -160,7 +160,7 @@ const AssetFormModal = ({
       status: formData.status,
       isBookable: formData.isBookable,
       files: selectedFiles,
-      removeMediaIds,
+      removeMediaIds: removedMediaIds,
     });
   };
 
