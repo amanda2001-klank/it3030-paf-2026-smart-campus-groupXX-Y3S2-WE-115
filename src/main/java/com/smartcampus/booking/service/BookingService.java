@@ -8,6 +8,9 @@ import com.smartcampus.booking.exception.UnauthorizedException;
 import com.smartcampus.booking.model.Booking;
 import com.smartcampus.booking.model.BookingStatus;
 import com.smartcampus.booking.repository.BookingRepository;
+import com.smartcampus.catalog.model.Asset;
+import com.smartcampus.catalog.repository.AssetRepository;
+import com.smartcampus.catalog.util.IdValidationUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +23,11 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final BookingRepository bookingRepository;
+    private final AssetRepository assetRepository;
 
-    public BookingService(BookingRepository bookingRepository) {
+    public BookingService(BookingRepository bookingRepository, AssetRepository assetRepository) {
         this.bookingRepository = bookingRepository;
+        this.assetRepository = assetRepository;
     }
 
     /**
@@ -36,9 +41,16 @@ public class BookingService {
      * @throws ConflictException if resource is already booked for the requested time
      */
     public BookingResponse createBooking(BookingRequest bookingRequest, String userId, String userName) {
+        String validatedResourceId = IdValidationUtils.requireValidObjectId(
+                bookingRequest.getResourceId(),
+                "Resource ID"
+        );
+        Asset asset = assetRepository.findById(validatedResourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Asset not found with id: " + validatedResourceId));
+
         // Check for conflicts with existing APPROVED bookings
         List<Booking> conflicts = bookingRepository.findConflicts(
-                bookingRequest.getResourceId(),
+                validatedResourceId,
                 bookingRequest.getStartTime(),
                 bookingRequest.getEndTime()
         );
@@ -50,8 +62,8 @@ public class BookingService {
 
         // Create new booking
         Booking booking = new Booking();
-        booking.setResourceId(bookingRequest.getResourceId());
-        booking.setResourceName(bookingRequest.getResourceName());
+        booking.setResourceId(validatedResourceId);
+        booking.setResourceName(asset.getAssetName());
         booking.setRequestedById(userId);
         booking.setRequestedByName(userName);
         booking.setStartTime(bookingRequest.getStartTime());

@@ -3,7 +3,10 @@ package com.smartcampus.booking.model;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -16,6 +19,8 @@ public class Booking {
     private String id;
 
     @NotBlank(message = "Resource ID is required")
+    @Indexed
+    @Field(targetType = FieldType.OBJECT_ID)
     private String resourceId;
 
     private String resourceName;
