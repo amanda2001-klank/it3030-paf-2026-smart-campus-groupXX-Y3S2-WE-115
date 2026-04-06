@@ -45,6 +45,11 @@ public class AssetService {
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "assetCode", "assetName", "capacity", "status", "isBookable", "createdAt", "updatedAt"
     );
+    private static final Set<AssetStatus> NON_BOOKABLE_STATUSES = Set.of(
+            AssetStatus.OUT_OF_SERVICE,
+            AssetStatus.MAINTENANCE,
+            AssetStatus.INACTIVE
+    );
 
     private final AssetRepository assetRepository;
     private final AssetTypeRepository assetTypeRepository;
@@ -299,7 +304,9 @@ public class AssetService {
         asset.setCapacity(request.getCapacity());
         asset.setDescription(IdValidationUtils.trimToNull(request.getDescription()));
         asset.setStatus(request.getStatus());
-        if (request.getIsBookable() != null) {
+        if (NON_BOOKABLE_STATUSES.contains(request.getStatus())) {
+            asset.setIsBookable(Boolean.FALSE);
+        } else if (request.getIsBookable() != null) {
             asset.setIsBookable(request.getIsBookable());
         }
     }
