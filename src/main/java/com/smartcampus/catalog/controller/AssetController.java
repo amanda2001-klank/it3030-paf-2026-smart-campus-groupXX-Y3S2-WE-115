@@ -51,53 +51,33 @@ public class AssetController {
 
     @GetMapping
     public ResponseEntity<PageResponse<AssetResponse>> searchAssets(
-            @Valid @ModelAttribute AssetSearchRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Name", required = false) String userName,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        requireManagerAccess(userId, userName, userRole);
+            @Valid @ModelAttribute AssetSearchRequest request) {
         return ResponseEntity.ok(assetService.searchAssets(request));
     }
 
     @GetMapping("/all")
     public ResponseEntity<PageResponse<AssetResponse>> getAllAssets(
-            @Valid @ModelAttribute AssetListRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Name", required = false) String userName,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        requireManagerAccess(userId, userName, userRole);
+            @Valid @ModelAttribute AssetListRequest request) {
         return ResponseEntity.ok(assetService.getAllAssets(request));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AssetResponse> getAssetById(
-            @PathVariable String id,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Name", required = false) String userName,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        requireManagerAccess(userId, userName, userRole);
+            @PathVariable String id) {
         return ResponseEntity.ok(assetService.getAssetById(id));
     }
 
     @GetMapping("/{assetId}/media/{mediaId}")
     public ResponseEntity<Resource> previewAssetMedia(
             @PathVariable String assetId,
-            @PathVariable String mediaId,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Name", required = false) String userName,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        requireManagerAccess(userId, userName, userRole);
+            @PathVariable String mediaId) {
         return buildMediaResponse(assetService.getAssetMediaContent(assetId, mediaId), false);
     }
 
     @GetMapping("/{assetId}/media/{mediaId}/download")
     public ResponseEntity<Resource> downloadAssetMedia(
             @PathVariable String assetId,
-            @PathVariable String mediaId,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Name", required = false) String userName,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        requireManagerAccess(userId, userName, userRole);
+            @PathVariable String mediaId) {
         return buildMediaResponse(assetService.getAssetMediaContent(assetId, mediaId), true);
     }
 
