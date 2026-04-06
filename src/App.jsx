@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-d
 import Sidebar from './components/Sidebar';
 import AssetCataloguePage from './pages/AssetCataloguePage';
 import AssetDetailPage from './pages/AssetDetailPage';
+import AssetListPage from './pages/AssetListPage';
+import AssetListDetailPage from './pages/AssetListDetailPage';
 import BookingManagement from './pages/BookingManagement';
 import PlaceholderPage from './pages/PlaceholderPage';
 import { ensureMockUser } from './utils/mockAuth';
@@ -31,6 +33,8 @@ function App() {
             />
             <Route path="/assets" element={<AssetCataloguePage />} />
             <Route path="/assets/:assetId" element={<AssetDetailPage />} />
+            <Route path="/asset-list" element={<AssetListPage />} />
+            <Route path="/asset-list/:assetId" element={<AssetListDetailPage />} />
             <Route path="/bookings" element={<BookingManagement />} />
             <Route
               path="/tickets"
