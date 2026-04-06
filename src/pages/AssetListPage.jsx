@@ -122,7 +122,7 @@ const AssetListPage = () => {
     try {
       const response = await listAllAssets({
         page: 0,
-        size: 200,
+        size: 100,
         sortBy: 'assetName',
         sortDir: 'asc',
       });
