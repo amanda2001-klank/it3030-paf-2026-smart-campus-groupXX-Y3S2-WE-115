@@ -13,6 +13,7 @@ const emptyForm = {
 
 const assetStatusOptions = ['ACTIVE', 'OUT_OF_SERVICE', 'MAINTENANCE', 'INACTIVE'];
 const nonBookableStatuses = new Set(['OUT_OF_SERVICE', 'MAINTENANCE', 'INACTIVE']);
+const allowedUploadTypesLabel = 'JPG, JPEG, PNG, GIF, WEBP, MP4, MOV, AVI, MKV, WEBM';
 
 const formatBytes = (bytes) => {
   if (!bytes) {
@@ -43,6 +44,18 @@ const AssetFormModal = ({
   const fileInputRef = useRef(null);
 
   const existingMedia = useMemo(() => initialData?.media || [], [initialData]);
+  const selectedAssetType = useMemo(
+    () => assetTypes.find((assetType) => assetType.id === formData.assetTypeId) || null,
+    [assetTypes, formData.assetTypeId]
+  );
+  const showCapacityField = useMemo(() => {
+    if (!selectedAssetType) {
+      return true;
+    }
+
+    const matcher = `${selectedAssetType.code || ''} ${selectedAssetType.name || ''}`.toUpperCase();
+    return matcher.includes('HALL');
+  }, [selectedAssetType]);
   const isForcedNonBookable = nonBookableStatuses.has(formData.status);
   const keptExistingMediaCount = existingMedia.filter(
     (mediaItem) => !removedMediaIds.includes(mediaItem.id)
@@ -93,6 +106,14 @@ const AssetFormModal = ({
 
       if (name === 'status' && nonBookableStatuses.has(String(nextValue))) {
         nextFormData.isBookable = false;
+      }
+
+      if (name === 'assetTypeId') {
+        const nextAssetType = assetTypes.find((assetType) => assetType.id === String(nextValue));
+        const nextMatcher = `${nextAssetType?.code || ''} ${nextAssetType?.name || ''}`.toUpperCase();
+        if (nextAssetType && !nextMatcher.includes('HALL')) {
+          nextFormData.capacity = '';
+        }
       }
 
       return nextFormData;
@@ -265,23 +286,25 @@ const AssetFormModal = ({
                 </select>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Capacity</label>
-                <input
-                  type="number"
-                  name="capacity"
-                  value={formData.capacity}
-                  min="0"
-                  onChange={handleChange}
-                  placeholder="120"
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
-                    errors.capacity
-                      ? 'border-red-400 focus:ring-2 focus:ring-red-100'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
-                  }`}
-                />
-                {errors.capacity && <p className="mt-2 text-xs text-red-600">{errors.capacity}</p>}
-              </div>
+              {showCapacityField && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Capacity</label>
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={formData.capacity}
+                    min="0"
+                    onChange={handleChange}
+                    placeholder="120"
+                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                      errors.capacity
+                        ? 'border-red-400 focus:ring-2 focus:ring-red-100'
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+                    }`}
+                  />
+                  {errors.capacity && <p className="mt-2 text-xs text-red-600">{errors.capacity}</p>}
+                </div>
+              )}
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">Status</label>
@@ -398,12 +421,13 @@ const AssetFormModal = ({
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept="image/*,video/*"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.mkv,.webm"
                   onChange={handleFileChange}
                   className="block w-full rounded-xl border border-dashed border-gray-300 bg-white px-4 py-4 text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:font-medium file:text-white hover:file:bg-blue-700"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  Selected files replace the current upload selection for this save action.
+                  Allowed file types: {allowedUploadTypesLabel}. Selected files replace the current
+                  upload selection for this save action.
                 </p>
                 {errors.files && <p className="mt-2 text-xs text-red-600">{errors.files}</p>}
               </div>
