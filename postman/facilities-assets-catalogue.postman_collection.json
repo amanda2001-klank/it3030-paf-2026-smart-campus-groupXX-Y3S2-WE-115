@@ -590,20 +590,7 @@
           "name": "List All Assets",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/all?page=0&size=10&sortBy=createdAt&sortDir=desc",
               "host": [
@@ -640,20 +627,7 @@
           "name": "List Assets",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?assetTypeId={{assetTypeId}}&building=Engineering&status=ACTIVE&minCapacity=50&page=0&size=10&sortBy=createdAt&sortDir=desc",
               "host": [
@@ -705,20 +679,7 @@
           "name": "Search Assets By Text",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=Lecture&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -758,20 +719,7 @@
           "name": "Search Assets By Asset Type Text",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=LECTURE_HALL&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -811,20 +759,7 @@
           "name": "Search Assets By Capacity Text",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets?query=120&page=0&size=10&sortBy=assetName&sortDir=asc",
               "host": [
@@ -880,20 +815,7 @@
           ],
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}",
               "host": [
@@ -912,20 +834,7 @@
           "name": "Preview Asset Media",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}/media/{{assetMediaId}}",
               "host": [
@@ -947,20 +856,7 @@
           "name": "Download Asset Media",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "{{mockUserId}}"
-              },
-              {
-                "key": "X-User-Name",
-                "value": "{{mockUserName}}"
-              },
-              {
-                "key": "X-User-Role",
-                "value": "{{mockRole}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/catalog/assets/{{assetId}}/media/{{assetMediaId}}/download",
               "host": [
