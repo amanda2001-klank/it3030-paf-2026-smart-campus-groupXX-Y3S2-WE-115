@@ -1,6 +1,7 @@
 package com.smartcampus.auth.service;
 
 import com.smartcampus.auth.model.AppUser;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,14 @@ public class JwtService {
 
     public long getExpirationInMillis() {
         return jwtExpirationMinutes * 60_000L;
+    }
+
+    public Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private SecretKey getSigningKey() {
