@@ -8,19 +8,25 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class GoogleTokenService {
 
     private static final String TOKEN_INFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo?id_token=";
 
-    private final String expectedAudience;
+    private final Set<String> expectedAudiences;
     private final RestTemplate restTemplate;
 
-    public GoogleTokenService(@Value("${app.auth.google.client-id}") String expectedAudience) {
-        this.expectedAudience = expectedAudience;
+    public GoogleTokenService(
+            @Value("${app.auth.google.client-id:}") String expectedAudience,
+            @Value("${app.auth.google.allowed-audiences:}") String allowedAudiences
+    ) {
+        this.expectedAudiences = parseExpectedAudiences(expectedAudience, allowedAudiences);
         this.restTemplate = new RestTemplate();
     }
 
@@ -40,9 +46,22 @@ public class GoogleTokenService {
                 throw new BadRequestException("Google token verification failed.");
             }
 
-            String audience = asString(payload.get("aud"));
-            if (!expectedAudience.equals(audience)) {
-                throw new BadRequestException("Google token audience mismatch.");
+            if (expectedAudiences.isEmpty()) {
+                throw new BadRequestException("Google login is not configured on backend.");
+            }
+
+            String audience = normalizeValue(asString(payload.get("aud")));
+            String authorizedParty = normalizeValue(asString(payload.get("azp")));
+            boolean audienceMatched = expectedAudiences.contains(audience)
+                    || (authorizedParty != null && expectedAudiences.contains(authorizedParty));
+
+            if (!audienceMatched) {
+                String receivedAudience = audience == null || audience.isBlank() ? "<missing>" : audience;
+                String receivedAzp = authorizedParty == null || authorizedParty.isBlank() ? "<missing>" : authorizedParty;
+                throw new BadRequestException(
+                    "Google token audience mismatch. Ensure frontend and backend use the same Google client ID. " +
+                        "received aud=" + receivedAudience + ", azp=" + receivedAzp
+                );
             }
 
             String emailVerified = asString(payload.get("email_verified"));
@@ -73,6 +92,34 @@ public class GoogleTokenService {
             return null;
         }
         return String.valueOf(value);
+    }
+
+    private Set<String> parseExpectedAudiences(String expectedAudience, String allowedAudiences) {
+        Set<String> audiences = new LinkedHashSet<>();
+        Arrays.stream(((allowedAudiences == null ? "" : allowedAudiences) + "," +
+                        (expectedAudience == null ? "" : expectedAudience)).split(","))
+                .map(this::normalizeValue)
+                .filter(value -> value != null && !value.isBlank())
+                .forEach(audiences::add);
+
+        return audiences;
+    }
+
+    private String normalizeValue(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        if (normalized.length() >= 2) {
+            boolean quotedWithDouble = normalized.startsWith("\"") && normalized.endsWith("\"");
+            boolean quotedWithSingle = normalized.startsWith("'") && normalized.endsWith("'");
+            if (quotedWithDouble || quotedWithSingle) {
+                normalized = normalized.substring(1, normalized.length() - 1).trim();
+            }
+        }
+
+        return normalized;
     }
 
     public record GoogleProfile(String subject, String email, String name, String pictureUrl) {
