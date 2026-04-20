@@ -2,10 +2,35 @@ import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginWithGoogle, loginUser } from '../services/authService';
-import { setAuthState } from '../utils/auth';
+import { hasAnyRole, isAdmin, setAuthState, USER_ROLES } from '../utils/auth';
 
 const resolveErrorMessage = (error, fallbackMessage) =>
   error?.response?.data?.message || fallbackMessage;
+
+const resolveGoogleErrorMessage = (error) => {
+  if (!error?.response) {
+    return 'Google sign-in failed because backend is unreachable. Start the API server on http://localhost:8080.';
+  }
+
+  const message = error.response?.data?.message || '';
+  if (message.toLowerCase().includes('audience mismatch')) {
+    return 'Google client ID mismatch. Ensure the same client ID is configured in frontend and backend and this origin is allowed in Google Cloud.';
+  }
+
+  return resolveErrorMessage(error, 'Google sign-in failed. Please try again.');
+};
+
+const resolveLandingPath = (role) => {
+  if (isAdmin(role)) {
+    return '/dashboard';
+  }
+
+  if (hasAnyRole(role, [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER])) {
+    return '/assets';
+  }
+
+  return '/bookings';
+};
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,7 +43,7 @@ const LoginPage = () => {
 
   const completeLogin = (responseData) => {
     setAuthState(responseData);
-    navigate('/assets', { replace: true });
+    navigate(resolveLandingPath(responseData?.user?.userRole), { replace: true });
   };
 
   const handleInputChange = (event) => {
@@ -60,7 +85,7 @@ const LoginPage = () => {
       const response = await loginWithGoogle(credentialResponse.credential);
       completeLogin(response.data);
     } catch (error) {
-      setErrorMessage(resolveErrorMessage(error, 'Google sign-in failed. Please try again.'));
+      setErrorMessage(resolveGoogleErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -130,7 +155,14 @@ const LoginPage = () => {
         </div>
 
         <div className="flex justify-center">
-          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setErrorMessage('Google sign-in failed.')} />
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() =>
+              setErrorMessage(
+                'Google sign-in was blocked. Ensure this origin is added to Authorized JavaScript origins in Google Cloud.'
+              )
+            }
+          />
         </div>
 
         <p className="mt-7 text-center text-sm text-slate-600">

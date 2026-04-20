@@ -1,6 +1,13 @@
 const AUTH_STORAGE_KEY = 'smartCampusAuth';
 const AUTH_TOKEN_KEY = 'authToken';
 
+export const USER_ROLES = {
+  ADMIN: 'ADMIN',
+  USER: 'USER',
+  ASSET_MANAGER: 'ASSET_MANAGER',
+  TECHNICIAN: 'TECHNICIAN',
+};
+
 const EMPTY_USER = {
   userId: '',
   userName: '',
@@ -122,8 +129,18 @@ export const isAuthenticated = () => {
   return Number(state.expiresAt) > Date.now();
 };
 
+export const normalizeRole = (role) => (role || '').toUpperCase();
+
+export const hasRole = (role, expectedRole) =>
+  normalizeRole(role) === normalizeRole(expectedRole);
+
+export const hasAnyRole = (role, roles = []) =>
+  roles.some((candidateRole) => hasRole(role, candidateRole));
+
 export const canManageCatalogue = (role) =>
-  ['ADMIN', 'ASSET_MANAGER'].includes((role || '').toUpperCase());
+  hasAnyRole(role, [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER]);
+
+export const isAdmin = (role) => hasRole(role, USER_ROLES.ADMIN);
 
 export const formatRoleLabel = (role) =>
   (role || '')

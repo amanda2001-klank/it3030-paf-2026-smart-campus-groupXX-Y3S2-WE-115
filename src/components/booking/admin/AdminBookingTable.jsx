@@ -1,5 +1,5 @@
 import React from 'react';
-import StatusBadge from '../StatusBadge';
+import StatusBadge from '../../StatusBadge';
 
 // ============================================================================
 // ADMIN BOOKING TABLE - Table for displaying and managing all bookings
@@ -168,12 +168,13 @@ const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
                   { hour: '2-digit', minute: '2-digit' }
                 );
                 const isPending = booking.status.toLowerCase() === 'pending';
-                const avatarColor = getAvatarColor(booking.userId);
-                const initials = getInitials(booking.userId);
+                const requestedByName = booking.requestedByName || 'Unknown User';
+                const avatarColor = getAvatarColor(requestedByName);
+                const initials = getInitials(requestedByName);
 
                 return (
                   <tr
-                    key={booking._id}
+                    key={booking.id}
                     className="border-t border-gray-200 hover:bg-gray-50 transition-colors"
                   >
                     {/* Resource Name */}
@@ -197,7 +198,7 @@ const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
                           {initials}
                         </div>
                         <span className="text-sm text-gray-700">
-                          {booking.userId}
+                          {requestedByName}
                         </span>
                       </div>
                     </td>
@@ -231,13 +232,13 @@ const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
                       {isPending ? (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => onApprove(booking._id)}
+                            onClick={() => onApprove(booking.id)}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
                           >
                             Approve
                           </button>
                           <button
-                            onClick={() => onReject(booking._id)}
+                            onClick={() => onReject(booking.id)}
                             className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
                           >
                             Reject

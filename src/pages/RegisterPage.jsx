@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/authService';
-import { setAuthState } from '../utils/auth';
+import { hasAnyRole, isAdmin, setAuthState, USER_ROLES } from '../utils/auth';
 
 const resolveErrorMessage = (error, fallbackMessage) =>
   error?.response?.data?.message || fallbackMessage;
 
-const roleOptions = [
-  { value: 'USER', label: 'User' },
-  { value: 'ASSET_MANAGER', label: 'Asset Manager' },
-  { value: 'TECHNICIAN', label: 'Technician' },
-  { value: 'ADMIN', label: 'Admin' },
-];
+const resolveLandingPath = (role) => {
+  if (isAdmin(role)) {
+    return '/dashboard';
+  }
+
+  if (hasAnyRole(role, [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER])) {
+    return '/assets';
+  }
+
+  return '/bookings';
+};
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -20,7 +25,6 @@ const RegisterPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'USER',
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -49,11 +53,10 @@ const RegisterPage = () => {
         userName: form.userName,
         email: form.email,
         password: form.password,
-        role: form.role,
       });
 
       setAuthState(response.data);
-      navigate('/assets', { replace: true });
+      navigate(resolveLandingPath(response.data?.user?.userRole), { replace: true });
     } catch (error) {
       setErrorMessage(resolveErrorMessage(error, 'Unable to create account. Please try again.'));
     } finally {
@@ -99,25 +102,6 @@ const RegisterPage = () => {
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               placeholder="you@example.com"
             />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-slate-700">
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={form.role}
-              onChange={handleInputChange}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            >
-              {roleOptions.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as bookingService from '../../services/bookingService';
+import * as bookingService from '../../../services/bookingService';
 
 // ============================================================================
 // CREATE BOOKING MODAL - Modal for user to create new booking

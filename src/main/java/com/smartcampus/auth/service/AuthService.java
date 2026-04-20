@@ -42,7 +42,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.getEmail());
         String userName = normalizeUserName(request.getUserName());
-        UserRole role = parseRole(request.getRole());
+        UserRole role = resolveRegistrationRole(request.getRole());
 
         if (appUserRepository.existsByEmail(email)) {
             throw new ConflictException("An account already exists for this email.");
@@ -133,9 +133,17 @@ public class AuthService {
         return new AuthResponse(token, expiresAt, userResponse);
     }
 
-    private UserRole parseRole(String roleValue) {
+    private UserRole resolveRegistrationRole(String roleValue) {
+        if (roleValue == null || roleValue.isBlank()) {
+            return UserRole.USER;
+        }
+
         try {
-            return UserRole.fromValue(roleValue);
+            UserRole requestedRole = UserRole.fromValue(roleValue);
+            if (requestedRole != UserRole.USER) {
+                throw new BadRequestException("Public registration can only create USER accounts.");
+            }
+            return requestedRole;
         } catch (IllegalArgumentException ex) {
             throw new BadRequestException("Role must be one of: ADMIN, USER, ASSET_MANAGER, TECHNICIAN");
         }

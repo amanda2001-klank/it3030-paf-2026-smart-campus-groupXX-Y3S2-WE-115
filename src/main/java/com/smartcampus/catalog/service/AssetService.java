@@ -17,7 +17,6 @@ import com.smartcampus.catalog.model.Location;
 import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.repository.AssetTypeRepository;
 import com.smartcampus.catalog.repository.LocationRepository;
-import com.smartcampus.catalog.security.MockUserContext;
 import com.smartcampus.catalog.util.IdValidationUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -69,7 +68,7 @@ public class AssetService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public AssetResponse createAsset(AssetRequest request, MockUserContext currentUser, List<MultipartFile> files) {
+    public AssetResponse createAsset(AssetRequest request, String createdByUserId, List<MultipartFile> files) {
         List<MultipartFile> normalizedFiles = assetMediaStorageService.normalizeFiles(files);
         String normalizedAssetCode = normalizeAssetCode(request.getAssetCode());
         if (assetRepository.existsByAssetCodeIgnoreCase(normalizedAssetCode)) {
@@ -81,7 +80,7 @@ public class AssetService {
 
         Asset asset = new Asset();
         applyAssetRequest(asset, request, normalizedAssetCode, assetType.getId(), location);
-        asset.setCreatedById(currentUser.getUserId());
+        asset.setCreatedById(createdByUserId);
         if (asset.getIsBookable() == null) {
             asset.setIsBookable(Boolean.TRUE);
         }
@@ -91,7 +90,7 @@ public class AssetService {
             List<AssetMedia> media = assetMediaStorageService.saveMediaFiles(
                     savedAsset.getId(),
                     normalizedFiles,
-                    currentUser.getUserId()
+                    createdByUserId
             );
             return AssetResponse.fromAsset(savedAsset, assetType, location, media);
         } catch (RuntimeException ex) {
@@ -208,7 +207,7 @@ public class AssetService {
         return new AssetMediaContent(media, assetMediaStorageService.loadMediaAsResource(media));
     }
 
-    public AssetResponse updateAsset(String id, AssetRequest request, String removeMediaIds, MockUserContext currentUser,
+    public AssetResponse updateAsset(String id, AssetRequest request, String removeMediaIds, String updatedByUserId,
                                      List<MultipartFile> files) {
         Asset asset = getAssetEntity(id);
         List<MultipartFile> normalizedFiles = assetMediaStorageService.normalizeFiles(files);
@@ -238,7 +237,7 @@ public class AssetService {
         List<AssetMedia> uploadedMedia = assetMediaStorageService.saveMediaFiles(
                 asset.getId(),
                 normalizedFiles,
-                currentUser.getUserId()
+                updatedByUserId
         );
         try {
             assetMediaStorageService.removeSelectedMedia(asset.getId(), removeMediaIds);

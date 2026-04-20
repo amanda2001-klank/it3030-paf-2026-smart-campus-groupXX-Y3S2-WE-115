@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AdminBookingTable from '../components/booking/admin/AdminBookingTable';
 import RejectModal from '../components/booking/admin/RejectModal';
 import Toast from '../components/common/Toast';
@@ -9,6 +10,8 @@ import * as bookingService from '../services/bookingService';
 // ============================================================================
 
 const AdminBookingPage = () => {
+  const navigate = useNavigate();
+
   // State management
   const [bookings, setBookings] = useState([]);
   const [filteredBookings, setFilteredBookings] = useState([]);
@@ -37,6 +40,11 @@ const AdminBookingPage = () => {
       setBookings(response.data);
       filterBookings(response.data, status);
     } catch (err) {
+      if (err.response?.status === 403) {
+        navigate('/bookings', { replace: true });
+        return;
+      }
+
       console.error('Error loading bookings:', err);
       setError('Failed to load bookings. Please try again.');
     } finally {
