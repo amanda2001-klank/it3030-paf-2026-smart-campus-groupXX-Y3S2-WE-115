@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as bookingService from '../../../services/bookingService';
+import * as catalogService from '../../../services/catalogService';
 
 // ============================================================================
 // CREATE BOOKING MODAL - Modal for user to create new booking
@@ -21,6 +22,65 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assets, setAssets] = useState([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+
+  // Load available assets when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadAssets();
+    }
+  }, [isOpen]);
+
+  // Fetch bookable assets from catalog
+  const loadAssets = async () => {
+    setLoadingAssets(true);
+    try {
+      // Fetch assets - the API returns a PageResponse with content array
+      const response = await catalogService.searchAssets({ isBookable: true });
+      let assetsArray = [];
+      
+      // Handle PageResponse structure
+      if (response.data?.content && Array.isArray(response.data.content)) {
+        assetsArray = response.data.content;
+      } else if (Array.isArray(response.data)) {
+        assetsArray = response.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        assetsArray = response.data.data;
+      } else if (Array.isArray(response)) {
+        assetsArray = response;
+      }
+      
+      console.log('Loaded bookable assets:', assetsArray);
+      
+      // If no bookable assets found, try fetching all assets
+      if (assetsArray.length === 0) {
+        console.log('No bookable assets found, fetching all assets...');
+        try {
+          const allResponse = await catalogService.searchAssets({});
+          if (allResponse.data?.content && Array.isArray(allResponse.data.content)) {
+            assetsArray = allResponse.data.content;
+          } else if (Array.isArray(allResponse.data)) {
+            assetsArray = allResponse.data;
+          } else if (allResponse.data?.data && Array.isArray(allResponse.data.data)) {
+            assetsArray = allResponse.data.data;
+          } else if (Array.isArray(allResponse)) {
+            assetsArray = allResponse;
+          }
+          console.log('Loaded all assets:', assetsArray);
+        } catch (fallbackErr) {
+          console.error('Error loading all assets:', fallbackErr);
+        }
+      }
+      
+      setAssets(assetsArray);
+    } catch (err) {
+      console.error('Error loading assets:', err);
+      setAssets([]);
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
 
   // Get minimum date (today)
   const getTodayDate = () => {
@@ -34,8 +94,8 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
     const today = getTodayDate();
 
     // Required fields
-    if (!formData.resourceName.trim()) {
-      newErrors.resourceName = 'Resource name is required';
+    if (!formData.resourceId) {
+      newErrors.resourceId = 'Please select a resource';
     }
 
     if (!formData.date) {
@@ -77,10 +137,21 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    // Special handling for resource selection
+    if (name === 'resourceId') {
+      const selectedAsset = assets.find(a => a._id === value);
+      setFormData((prev) => ({
+        ...prev,
+        resourceId: value,
+        resourceName: selectedAsset?.assetName || '',
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // Clear error for this field when user starts typing
     if (errors[name]) {
@@ -116,7 +187,7 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
 
       // Prepare payload
       const payload = {
-        resourceId: formData.resourceId || formData.resourceName,
+        resourceId: formData.resourceId,
         resourceName: formData.resourceName,
         startTime: startDateTime,
         endTime: endDateTime,
@@ -211,25 +282,36 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Resource Name */}
+            {/* Resource Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Resource Name <span className="text-red-500">*</span>
+                Select Resource <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="resourceName"
-                value={formData.resourceName}
-                onChange={handleChange}
-                placeholder="e.g., Auditorium A, Lab 201"
-                className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-all ${
-                  errors.resourceName
-                    ? 'border-red-500 focus:ring-2 focus:ring-red-500'
-                    : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
-                }`}
-              />
-              {errors.resourceName && (
-                <p className="text-red-500 text-xs mt-1">{errors.resourceName}</p>
+              {loadingAssets ? (
+                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-500">
+                  Loading resources...
+                </div>
+              ) : (
+                <select
+                  name="resourceId"
+                  value={formData.resourceId}
+                  onChange={handleChange}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-all ${
+                    errors.resourceId
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
+                  }`}
+                >
+                  <option value="">-- Choose a resource --</option>
+                  {Array.isArray(assets) && assets.map((asset) => (
+                    <option key={asset._id} value={asset._id}>
+                      {asset.assetName} {asset.capacity ? `(Capacity: ${asset.capacity})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {errors.resourceId && (
+                <p className="text-red-500 text-xs mt-1">{errors.resourceId}</p>
               )}
             </div>
 
