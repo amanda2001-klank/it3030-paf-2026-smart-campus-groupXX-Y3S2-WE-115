@@ -18,6 +18,7 @@ import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.repository.AssetTypeRepository;
 import com.smartcampus.catalog.repository.LocationRepository;
 import com.smartcampus.catalog.util.IdValidationUtils;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -55,17 +56,20 @@ public class AssetService {
     private final LocationRepository locationRepository;
     private final AssetMediaStorageService assetMediaStorageService;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public AssetService(AssetRepository assetRepository,
                         AssetTypeRepository assetTypeRepository,
                         LocationRepository locationRepository,
                         AssetMediaStorageService assetMediaStorageService,
-                        MongoTemplate mongoTemplate) {
+                        MongoTemplate mongoTemplate,
+                        NotificationService notificationService) {
         this.assetRepository = assetRepository;
         this.assetTypeRepository = assetTypeRepository;
         this.locationRepository = locationRepository;
         this.assetMediaStorageService = assetMediaStorageService;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     public AssetResponse createAsset(AssetRequest request, String createdByUserId, List<MultipartFile> files) {
@@ -92,6 +96,7 @@ public class AssetService {
                     normalizedFiles,
                     createdByUserId
             );
+            notificationService.notifyAssetCreated(savedAsset);
             return AssetResponse.fromAsset(savedAsset, assetType, location, media);
         } catch (RuntimeException ex) {
             assetMediaStorageService.deleteAllMediaForAsset(savedAsset.getId());
@@ -247,16 +252,15 @@ public class AssetService {
         }
 
         List<AssetMedia> allMedia = assetMediaStorageService.getMediaByAssetId(asset.getId());
+        notificationService.notifyAssetUpdated(updatedAsset);
         return AssetResponse.fromAsset(updatedAsset, assetType, location, allMedia);
     }
 
     public void deleteAsset(String id) {
-        String validatedId = IdValidationUtils.requireValidObjectId(id, "Asset ID");
-        if (!assetRepository.existsById(validatedId)) {
-            throw new ResourceNotFoundException("Asset not found with id: " + validatedId);
-        }
-        assetMediaStorageService.deleteAllMediaForAsset(validatedId);
-        assetRepository.deleteById(validatedId);
+        Asset asset = getAssetEntity(id);
+        assetMediaStorageService.deleteAllMediaForAsset(asset.getId());
+        assetRepository.deleteById(asset.getId());
+        notificationService.notifyAssetDeleted(asset.getId(), asset.getAssetName());
     }
 
     private Asset getAssetEntity(String id) {

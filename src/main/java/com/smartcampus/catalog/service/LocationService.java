@@ -11,6 +11,7 @@ import com.smartcampus.catalog.model.Location;
 import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.repository.LocationRepository;
 import com.smartcampus.catalog.util.IdValidationUtils;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -36,19 +37,24 @@ public class LocationService {
     private final LocationRepository locationRepository;
     private final AssetRepository assetRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public LocationService(LocationRepository locationRepository,
                            AssetRepository assetRepository,
-                           MongoTemplate mongoTemplate) {
+                           MongoTemplate mongoTemplate,
+                           NotificationService notificationService) {
         this.locationRepository = locationRepository;
         this.assetRepository = assetRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     public LocationResponse createLocation(LocationRequest request) {
         Location location = new Location();
         applyRequest(location, request);
-        return LocationResponse.fromLocation(locationRepository.save(location));
+        Location savedLocation = locationRepository.save(location);
+        notificationService.notifyLocationCreated(savedLocation.getId(), savedLocation.getLocationName());
+        return LocationResponse.fromLocation(savedLocation);
     }
 
     @Transactional(readOnly = true)
@@ -105,20 +111,21 @@ public class LocationService {
     public LocationResponse updateLocation(String id, LocationRequest request) {
         Location location = getLocationEntity(id);
         applyRequest(location, request);
-        return LocationResponse.fromLocation(locationRepository.save(location));
+        Location savedLocation = locationRepository.save(location);
+        notificationService.notifyLocationUpdated(savedLocation.getId(), savedLocation.getLocationName());
+        return LocationResponse.fromLocation(savedLocation);
     }
 
     public void deleteLocation(String id) {
-        String validatedId = IdValidationUtils.requireValidObjectId(id, "Location ID");
-        if (!locationRepository.existsById(validatedId)) {
-            throw new ResourceNotFoundException("Location not found with id: " + validatedId);
-        }
+        Location location = getLocationEntity(id);
+        String validatedId = location.getId();
 
         if (assetRepository.countByLocationId(validatedId) > 0) {
             throw new ConflictException("Location cannot be deleted because it is referenced by existing assets");
         }
 
         locationRepository.deleteById(validatedId);
+        notificationService.notifyLocationDeleted(validatedId, location.getLocationName());
     }
 
     private Location getLocationEntity(String id) {
