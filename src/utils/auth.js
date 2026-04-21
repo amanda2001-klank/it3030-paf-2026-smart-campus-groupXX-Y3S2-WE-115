@@ -131,6 +131,18 @@ export const isAuthenticated = () => {
 
 export const normalizeRole = (role) => (role || '').toUpperCase();
 
+export const ROLE_DASHBOARD_PATHS = {
+  [USER_ROLES.ADMIN]: '/dashboard/admin',
+  [USER_ROLES.ASSET_MANAGER]: '/dashboard/asset-manager',
+  [USER_ROLES.TECHNICIAN]: '/dashboard/technician',
+  [USER_ROLES.USER]: '/dashboard/user',
+};
+
+export const getDashboardPathForRole = (role) => {
+  const normalizedRole = normalizeRole(role);
+  return ROLE_DASHBOARD_PATHS[normalizedRole] || ROLE_DASHBOARD_PATHS[USER_ROLES.USER];
+};
+
 export const hasRole = (role, expectedRole) =>
   normalizeRole(role) === normalizeRole(expectedRole);
 

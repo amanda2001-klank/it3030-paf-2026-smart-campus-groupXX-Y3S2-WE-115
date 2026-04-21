@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   clearAuthState,
   formatRoleLabel,
+  getDashboardPathForRole,
   getCurrentUser,
   hasAnyRole,
   isAdmin,
@@ -24,11 +25,14 @@ const Sidebar = () => {
     navigate('/login', { replace: true });
   };
 
-  const menuItems = [];
-
-  if (hasAdminAccess) {
-    menuItems.push({ id: 'dashboard', label: 'Dashboard', icon: '\u25A6', path: '/dashboard' });
-  }
+  const menuItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: '\u25A6',
+      path: getDashboardPathForRole(currentRole),
+    },
+  ];
 
   if (hasManagerAccess) {
     menuItems.push({ id: 'assets', label: 'Assets', icon: '\u25A3', path: '/assets' });
@@ -36,21 +40,20 @@ const Sidebar = () => {
 
   menuItems.push({ id: 'asset-list', label: 'Asset List', icon: '\u25A8', path: '/asset-list' });
 
+  menuItems.push({ id: 'bookings', label: 'My Bookings', icon: '\u2605', path: '/bookings' });
+
   if (hasAdminAccess) {
     menuItems.push({ id: 'admin-bookings', label: 'Booking Requests', icon: '\u25A4', path: '/admin/bookings' });
-    menuItems.push({ id: 'bookings', label: 'My Bookings', icon: '\u2605', path: '/bookings' });
     menuItems.push({ id: 'tickets', label: 'Incident Tickets', icon: '\u25A9', path: '/tickets' });
     menuItems.push({ id: 'users', label: 'User Management', icon: '\u25A7', path: '/users' });
     menuItems.push({ id: 'settings', label: 'Settings', icon: '\u2699', path: '/settings' });
-  } else {
-    menuItems.push({ id: 'bookings', label: 'My Bookings', icon: '\u25A4', path: '/bookings' });
   }
 
   return (
     <aside className="flex h-screen w-64 shrink-0 flex-col bg-gray-900 text-white xl:w-72">
       <div className="border-b border-gray-800 p-6">
         <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Operations Hub</h2>
-        <p className="mt-1 text-xs text-gray-500">Smart Campus Admin</p>
+        <p className="mt-1 text-xs text-gray-500">Smart Campus Portal</p>
       </div>
 
       <nav className="flex-1 space-y-2 p-4">

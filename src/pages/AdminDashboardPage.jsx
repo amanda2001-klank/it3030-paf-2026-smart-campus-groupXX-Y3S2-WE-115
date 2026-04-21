@@ -138,6 +138,13 @@ const AdminDashboardPage = () => {
             >
               Manage Asset Catalogue
             </button>
+            <button
+              type="button"
+              onClick={() => navigate('/users')}
+              className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            >
+              Manage Users
+            </button>
           </div>
         </section>
 

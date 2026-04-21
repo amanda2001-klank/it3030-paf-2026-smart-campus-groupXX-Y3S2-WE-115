@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginWithGoogle, loginUser } from '../services/authService';
-import { hasAnyRole, isAdmin, setAuthState, USER_ROLES } from '../utils/auth';
+import { getDashboardPathForRole, setAuthState } from '../utils/auth';
 
 const resolveErrorMessage = (error, fallbackMessage) =>
   error?.response?.data?.message || fallbackMessage;
@@ -20,18 +20,6 @@ const resolveGoogleErrorMessage = (error) => {
   return resolveErrorMessage(error, 'Google sign-in failed. Please try again.');
 };
 
-const resolveLandingPath = (role) => {
-  if (isAdmin(role)) {
-    return '/dashboard';
-  }
-
-  if (hasAnyRole(role, [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER])) {
-    return '/assets';
-  }
-
-  return '/bookings';
-};
-
 const LoginPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -43,7 +31,7 @@ const LoginPage = () => {
 
   const completeLogin = (responseData) => {
     setAuthState(responseData);
-    navigate(resolveLandingPath(responseData?.user?.userRole), { replace: true });
+    navigate(getDashboardPathForRole(responseData?.user?.userRole), { replace: true });
   };
 
   const handleInputChange = (event) => {
