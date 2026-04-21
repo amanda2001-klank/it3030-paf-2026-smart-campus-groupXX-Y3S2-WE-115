@@ -11,6 +11,7 @@ import com.smartcampus.auth.repository.AppUserRepository;
 import com.smartcampus.booking.exception.BadRequestException;
 import com.smartcampus.booking.exception.ConflictException;
 import com.smartcampus.booking.exception.ResourceNotFoundException;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,10 +27,16 @@ public class AdminUserService {
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
-    public AdminUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+    public AdminUserService(
+            AppUserRepository appUserRepository,
+            PasswordEncoder passwordEncoder,
+            NotificationService notificationService
+    ) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     public List<AdminUserResponse> listUsers() {
@@ -63,6 +70,7 @@ public class AdminUserService {
         user.setProvider(AuthProvider.LOCAL);
 
         AppUser saved = appUserRepository.save(user);
+        notificationService.notifyUserAccountCreated(saved);
         return toResponse(saved);
     }
 
@@ -80,6 +88,7 @@ public class AdminUserService {
         user.setEmail(email);
 
         AppUser saved = appUserRepository.save(user);
+        notificationService.notifyUserAccountUpdated(saved);
         return toResponse(saved);
     }
 
@@ -100,6 +109,7 @@ public class AdminUserService {
 
         user.setRole(newRole);
         AppUser saved = appUserRepository.save(user);
+        notificationService.notifyUserRoleChanged(saved, currentRole, newRole);
         return toResponse(saved);
     }
 
