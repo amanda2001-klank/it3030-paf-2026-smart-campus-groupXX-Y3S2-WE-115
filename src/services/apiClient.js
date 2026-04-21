@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { getMockUser } from '../utils/mockAuth';
+import { getAuthToken } from '../utils/auth';
 
-export const API_BASE_URL = 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -10,12 +10,13 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const { userId, userName, userRole } = getMockUser();
+    const token = getAuthToken();
 
     config.headers = config.headers || {};
-    config.headers['X-User-Id'] = userId;
-    config.headers['X-User-Name'] = userName;
-    config.headers['X-User-Role'] = userRole;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
     return config;
   },

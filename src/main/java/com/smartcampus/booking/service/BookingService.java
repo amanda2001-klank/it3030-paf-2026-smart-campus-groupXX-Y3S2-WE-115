@@ -11,10 +11,10 @@ import com.smartcampus.booking.repository.BookingRepository;
 import com.smartcampus.catalog.model.Asset;
 import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.util.IdValidationUtils;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,10 +24,16 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final AssetRepository assetRepository;
+    private final NotificationService notificationService;
 
-    public BookingService(BookingRepository bookingRepository, AssetRepository assetRepository) {
+    public BookingService(
+            BookingRepository bookingRepository,
+            AssetRepository assetRepository,
+            NotificationService notificationService
+    ) {
         this.bookingRepository = bookingRepository;
         this.assetRepository = assetRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -73,6 +79,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.PENDING);
 
         Booking savedBooking = bookingRepository.save(booking);
+        notificationService.notifyAdminsNewBooking(savedBooking);
         return BookingResponse.fromBooking(savedBooking);
     }
 
@@ -94,6 +101,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.APPROVED);
         Booking updatedBooking = bookingRepository.save(booking);
+        notificationService.notifyUserBookingApproved(updatedBooking);
         return BookingResponse.fromBooking(updatedBooking);
     }
 
@@ -116,6 +124,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
         Booking updatedBooking = bookingRepository.save(booking);
+        notificationService.notifyUserBookingRejected(updatedBooking);
         return BookingResponse.fromBooking(updatedBooking);
     }
 
@@ -145,6 +154,7 @@ public class BookingService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         Booking updatedBooking = bookingRepository.save(booking);
+        notificationService.notifyAdminsBookingCancelled(updatedBooking);
         return BookingResponse.fromBooking(updatedBooking);
     }
 

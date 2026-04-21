@@ -1,71 +1,233 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import AssetManagerDashboardPage from './pages/AssetManagerDashboardPage';
 import AssetCataloguePage from './pages/AssetCataloguePage';
 import AssetDetailPage from './pages/AssetDetailPage';
 import AssetListPage from './pages/AssetListPage';
 import AssetListDetailPage from './pages/AssetListDetailPage';
-import BookingManagement from './pages/BookingManagement';
+import AdminBookingPage from './pages/AdminBookingPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
-import { ensureMockUser } from './utils/mockAuth';
+import RegisterPage from './pages/RegisterPage';
+import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
+import UserBookingPage from './pages/UserBookingPage';
+import UserDashboardPage from './pages/UserDashboardPage';
+import UserManagementPage from './pages/UserManagementPage';
+import {
+  getCurrentUser,
+  getDashboardPathForRole,
+  hasAnyRole,
+  isAuthenticated,
+  USER_ROLES,
+} from './utils/auth';
 
-function App() {
-  useEffect(() => {
-    ensureMockUser();
-  }, []);
+const ALL_AUTH_ROLES = Object.values(USER_ROLES);
+const MANAGER_ROLES = [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER];
+
+const getDefaultPathForRole = (role) => getDashboardPathForRole(role);
+
+const PublicOnlyRoute = ({ children }) => {
+  if (isAuthenticated()) {
+    return <Navigate to={getDefaultPathForRole(getCurrentUser().userRole)} replace />;
+  }
+
+  return children;
+};
+
+const PrivateRoute = ({ children }) => {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const RoleRoute = ({ allowedRoles, children }) => {
+  const currentUser = getCurrentUser();
+
+  if (!hasAnyRole(currentUser.userRole, allowedRoles)) {
+    return <Navigate to={getDefaultPathForRole(currentUser.userRole)} replace />;
+  }
+
+  return children;
+};
+
+const ProtectedShell = () => {
+  const defaultPath = getDefaultPathForRole(getCurrentUser().userRole);
 
   return (
-    <Router>
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar />
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
 
-        <div className="flex-1 min-w-0 overflow-auto">
-          <Routes>
-            <Route path="/" element={<Navigate to="/assets" replace />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PlaceholderPage
-                  title="Dashboard"
-                  description="The main dashboard shell is ready. This route is now wired through the sidebar so the layout behaves like a real multi-module app."
-                />
-              }
-            />
-            <Route path="/assets" element={<AssetCataloguePage />} />
-            <Route path="/assets/:assetId" element={<AssetDetailPage />} />
-            <Route path="/asset-list" element={<AssetListPage />} />
-            <Route path="/asset-list/:assetId" element={<AssetListDetailPage />} />
-            <Route path="/bookings" element={<BookingManagement />} />
-            <Route
-              path="/tickets"
-              element={
+      <div className="flex-1 min-w-0 overflow-auto">
+        <Routes>
+          <Route path="/" element={<Navigate to={defaultPath} replace />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+                <Navigate to={defaultPath} replace />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/admin"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <AdminDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/asset-manager"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ASSET_MANAGER]}>
+                <AssetManagerDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/technician"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.TECHNICIAN]}>
+                <TechnicianDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/user"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.USER]}>
+                <UserDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/assets"
+            element={
+              <RoleRoute allowedRoles={MANAGER_ROLES}>
+                <AssetCataloguePage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/assets/:assetId"
+            element={
+              <RoleRoute allowedRoles={MANAGER_ROLES}>
+                <AssetDetailPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/asset-list"
+            element={
+              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+                <AssetListPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/asset-list/:assetId"
+            element={
+              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+                <AssetListDetailPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/bookings"
+            element={
+              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+                <UserBookingPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <AdminBookingPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/tickets"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <PlaceholderPage
                   title="Incident Tickets"
-                  description="Ticketing screens are not implemented yet, but the route and sidebar navigation are now live so the module can be added without reworking the app shell."
+                  description="Ticketing workflows can be added here with role-based triage and technician assignment."
                 />
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <PlaceholderPage
-                  title="User Management"
-                  description="User administration is still a placeholder. The route exists so the sidebar works end-to-end while the team completes the remaining modules."
-                />
-              }
-            />
-            <Route
-              path="/settings"
-              element={
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <UserManagementPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <PlaceholderPage
                   title="Settings"
-                  description="Settings has a working route placeholder so the sidebar behaves consistently across the application."
+                  description="System-wide settings route is protected for admins and available for configuration modules."
                 />
-              }
-            />
-          </Routes>
-        </div>
+              </RoleRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to={defaultPath} replace />} />
+        </Routes>
       </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <LoginPage />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicOnlyRoute>
+              <RegisterPage />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/*"
+          element={
+            <PrivateRoute>
+              <ProtectedShell />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

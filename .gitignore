@@ -25,4 +25,8 @@ dist-ssr
 *.sw?
 /target
 /uploads/
+
+# Environment files
 .env
+.env.*
+!.env.example

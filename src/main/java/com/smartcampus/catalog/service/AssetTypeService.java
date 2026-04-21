@@ -11,6 +11,7 @@ import com.smartcampus.catalog.model.AssetType;
 import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.repository.AssetTypeRepository;
 import com.smartcampus.catalog.util.IdValidationUtils;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -34,13 +35,16 @@ public class AssetTypeService {
     private final AssetTypeRepository assetTypeRepository;
     private final AssetRepository assetRepository;
     private final MongoTemplate mongoTemplate;
+    private final NotificationService notificationService;
 
     public AssetTypeService(AssetTypeRepository assetTypeRepository,
                             AssetRepository assetRepository,
-                            MongoTemplate mongoTemplate) {
+                            MongoTemplate mongoTemplate,
+                            NotificationService notificationService) {
         this.assetTypeRepository = assetTypeRepository;
         this.assetRepository = assetRepository;
         this.mongoTemplate = mongoTemplate;
+        this.notificationService = notificationService;
     }
 
     public AssetTypeResponse createAssetType(AssetTypeRequest request) {
@@ -52,7 +56,9 @@ public class AssetTypeService {
         AssetType assetType = new AssetType();
         assetType.setCode(normalizedCode);
         assetType.setName(normalizeRequired(request.getName(), "Asset type name"));
-        return AssetTypeResponse.fromAssetType(assetTypeRepository.save(assetType));
+        AssetType savedAssetType = assetTypeRepository.save(assetType);
+        notificationService.notifyAssetTypeCreated(savedAssetType.getId(), savedAssetType.getName());
+        return AssetTypeResponse.fromAssetType(savedAssetType);
     }
 
     @Transactional(readOnly = true)
@@ -103,20 +109,21 @@ public class AssetTypeService {
 
         assetType.setCode(normalizedCode);
         assetType.setName(normalizeRequired(request.getName(), "Asset type name"));
-        return AssetTypeResponse.fromAssetType(assetTypeRepository.save(assetType));
+        AssetType savedAssetType = assetTypeRepository.save(assetType);
+        notificationService.notifyAssetTypeUpdated(savedAssetType.getId(), savedAssetType.getName());
+        return AssetTypeResponse.fromAssetType(savedAssetType);
     }
 
     public void deleteAssetType(String id) {
-        String validatedId = IdValidationUtils.requireValidObjectId(id, "Asset type ID");
-        if (!assetTypeRepository.existsById(validatedId)) {
-            throw new ResourceNotFoundException("Asset type not found with id: " + validatedId);
-        }
+        AssetType assetType = getAssetTypeEntity(id);
+        String validatedId = assetType.getId();
 
         if (assetRepository.countByAssetTypeId(validatedId) > 0) {
             throw new ConflictException("Asset type cannot be deleted because it is referenced by existing assets");
         }
 
         assetTypeRepository.deleteById(validatedId);
+        notificationService.notifyAssetTypeDeleted(validatedId, assetType.getCode());
     }
 
     public AssetType getAssetTypeEntity(String id) {

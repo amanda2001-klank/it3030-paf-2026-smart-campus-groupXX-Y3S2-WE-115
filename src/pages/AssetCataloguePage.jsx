@@ -1391,8 +1391,8 @@ const AssetCataloguePage = () => {
             </p>
             <h1 className="mt-3 text-3xl font-semibold text-gray-900">Asset operations workspace</h1>
             <p className="mt-3 text-sm leading-6 text-gray-600">
-              Manage asset records, supporting locations, and asset types from one module. Current
-              mock access is running as <span className="font-semibold text-gray-900">{currentUser.userName}</span>{' '}
+              Manage asset records, supporting locations, and asset types from one module. Signed in
+              as <span className="font-semibold text-gray-900">{currentUser.userName}</span>{' '}
               ({formatRoleLabel(currentUser.userRole)}).
             </p>
           </div>

@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import SkeletonLoader from '../components/common/SkeletonLoader';
 import Toast from '../components/common/Toast';
 import * as bookingService from '../services/bookingService';
+import { getCurrentUser } from '../utils/auth';
 
 const BookingManagement = () => {
   // Track active filter tab
@@ -43,8 +44,7 @@ const BookingManagement = () => {
   // Load bookings on component mount and when filters change
   useEffect(() => {
     loadBookings();
-    // Check if user is admin from localStorage (team will replace with auth context)
-    const userRole = localStorage.getItem('userRole') || 'USER';
+    const userRole = getCurrentUser().userRole || 'USER';
     setIsAdmin(userRole === 'ADMIN');
   }, [activeTab]);
 
