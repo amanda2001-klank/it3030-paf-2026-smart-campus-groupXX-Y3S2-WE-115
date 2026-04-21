@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import AssetManagerDashboardPage from './pages/AssetManagerDashboardPage';
 import AssetCataloguePage from './pages/AssetCataloguePage';
 import AssetDetailPage from './pages/AssetDetailPage';
 import AssetListPage from './pages/AssetListPage';
@@ -10,23 +11,22 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import RegisterPage from './pages/RegisterPage';
+import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
 import UserBookingPage from './pages/UserBookingPage';
-import { getCurrentUser, hasAnyRole, isAdmin, isAuthenticated, USER_ROLES } from './utils/auth';
+import UserDashboardPage from './pages/UserDashboardPage';
+import UserManagementPage from './pages/UserManagementPage';
+import {
+  getCurrentUser,
+  getDashboardPathForRole,
+  hasAnyRole,
+  isAuthenticated,
+  USER_ROLES,
+} from './utils/auth';
 
 const ALL_AUTH_ROLES = Object.values(USER_ROLES);
 const MANAGER_ROLES = [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER];
 
-const getDefaultPathForRole = (role) => {
-  if (isAdmin(role)) {
-    return '/dashboard';
-  }
-
-  if (hasAnyRole(role, MANAGER_ROLES)) {
-    return '/assets';
-  }
-
-  return '/bookings';
-};
+const getDefaultPathForRole = (role) => getDashboardPathForRole(role);
 
 const PublicOnlyRoute = ({ children }) => {
   if (isAuthenticated()) {
@@ -68,8 +68,44 @@ const ProtectedShell = () => {
           <Route
             path="/dashboard"
             element={
+              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+                <Navigate to={defaultPath} replace />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/admin"
+            element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <AdminDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/asset-manager"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ASSET_MANAGER]}>
+                <AssetManagerDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/technician"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.TECHNICIAN]}>
+                <TechnicianDashboardPage />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/user"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.USER]}>
+                <UserDashboardPage />
               </RoleRoute>
             }
           />
@@ -140,10 +176,7 @@ const ProtectedShell = () => {
             path="/users"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
-                <PlaceholderPage
-                  title="User Management"
-                  description="User administration route is protected for admins and ready for role management features."
-                />
+                <UserManagementPage />
               </RoleRoute>
             }
           />

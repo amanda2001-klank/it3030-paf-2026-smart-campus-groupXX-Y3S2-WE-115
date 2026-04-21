@@ -11,6 +11,7 @@ import com.smartcampus.auth.model.UserRole;
 import com.smartcampus.auth.repository.AppUserRepository;
 import com.smartcampus.booking.exception.BadRequestException;
 import com.smartcampus.booking.exception.ConflictException;
+import com.smartcampus.notification.service.NotificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,17 +27,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleTokenService googleTokenService;
+    private final NotificationService notificationService;
 
     public AuthService(
             AppUserRepository appUserRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            GoogleTokenService googleTokenService
+            GoogleTokenService googleTokenService,
+            NotificationService notificationService
     ) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleTokenService = googleTokenService;
+        this.notificationService = notificationService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -56,6 +60,7 @@ public class AuthService {
         user.setProvider(AuthProvider.LOCAL);
 
         AppUser savedUser = appUserRepository.save(user);
+        notificationService.notifyAdminsNewUser(savedUser);
         return buildAuthResponse(savedUser);
     }
 
@@ -84,17 +89,18 @@ public class AuthService {
     public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
         GoogleTokenService.GoogleProfile googleProfile = googleTokenService.verifyIdToken(request.getIdToken());
 
-        AppUser user = appUserRepository.findByEmail(googleProfile.email())
-                .orElseGet(() -> {
-                    AppUser createdUser = new AppUser();
-                    createdUser.setEmail(googleProfile.email());
-                    createdUser.setUserName(googleProfile.name());
-                    createdUser.setRole(UserRole.USER);
-                    createdUser.setProvider(AuthProvider.GOOGLE);
-                    createdUser.setGoogleSubject(googleProfile.subject());
-                    createdUser.setAvatarUrl(googleProfile.pictureUrl());
-                    return createdUser;
-                });
+        AppUser user = appUserRepository.findByEmail(googleProfile.email()).orElse(null);
+        boolean isNewUser = user == null;
+
+        if (isNewUser) {
+            user = new AppUser();
+            user.setEmail(googleProfile.email());
+            user.setUserName(googleProfile.name());
+            user.setRole(UserRole.USER);
+            user.setProvider(AuthProvider.GOOGLE);
+            user.setGoogleSubject(googleProfile.subject());
+            user.setAvatarUrl(googleProfile.pictureUrl());
+        }
 
         if (user.getUserName() == null || user.getUserName().isBlank()) {
             user.setUserName(googleProfile.name());
@@ -115,6 +121,9 @@ public class AuthService {
         }
 
         AppUser savedUser = appUserRepository.save(user);
+        if (isNewUser) {
+            notificationService.notifyAdminsNewUser(savedUser);
+        }
         return buildAuthResponse(savedUser);
     }
 

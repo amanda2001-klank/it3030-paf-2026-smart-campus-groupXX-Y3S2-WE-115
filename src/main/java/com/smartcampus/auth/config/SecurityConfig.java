@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/notifications/stream").permitAll()
                         .requestMatchers("/api/bookings/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

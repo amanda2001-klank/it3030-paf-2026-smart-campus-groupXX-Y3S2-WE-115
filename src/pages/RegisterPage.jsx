@@ -1,22 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/authService';
-import { hasAnyRole, isAdmin, setAuthState, USER_ROLES } from '../utils/auth';
+import { getDashboardPathForRole, setAuthState } from '../utils/auth';
 
 const resolveErrorMessage = (error, fallbackMessage) =>
   error?.response?.data?.message || fallbackMessage;
-
-const resolveLandingPath = (role) => {
-  if (isAdmin(role)) {
-    return '/dashboard';
-  }
-
-  if (hasAnyRole(role, [USER_ROLES.ADMIN, USER_ROLES.ASSET_MANAGER])) {
-    return '/assets';
-  }
-
-  return '/bookings';
-};
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -56,7 +44,7 @@ const RegisterPage = () => {
       });
 
       setAuthState(response.data);
-      navigate(resolveLandingPath(response.data?.user?.userRole), { replace: true });
+      navigate(getDashboardPathForRole(response.data?.user?.userRole), { replace: true });
     } catch (error) {
       setErrorMessage(resolveErrorMessage(error, 'Unable to create account. Please try again.'));
     } finally {
