@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
+import { getAuditLogs, getAuditSummary } from '../services/adminAuditService';
 import * as bookingService from '../services/bookingService';
 import { listAllAssets, searchAssets } from '../services/catalogService';
+import { listUsers } from '../services/userManagementService';
 
 const formatDateTime = (value) => {
   if (!value) {
@@ -26,11 +28,19 @@ const sortByCreatedAtDesc = (left, right) => {
   return rightDate - leftDate;
 };
 
+const normalizeLabel = (value) =>
+  (value || 'UNKNOWN')
+    .toLowerCase()
+    .split('_')
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join(' ');
+
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState([]);
+  const [recentAuditEvents, setRecentAuditEvents] = useState([]);
   const [stats, setStats] = useState({
     totalAssets: 0,
     activeAssets: 0,
@@ -38,6 +48,10 @@ const AdminDashboardPage = () => {
     totalBookings: 0,
     pendingBookings: 0,
     approvedBookings: 0,
+    totalUsers: 0,
+    adminUsers: 0,
+    technicianUsers: 0,
+    auditEventsLast24Hours: 0,
   });
 
   const recentBookings = useMemo(
@@ -55,18 +69,28 @@ const AdminDashboardPage = () => {
         allAssetsResponse,
         activeAssetsResponse,
         bookableAssetsResponse,
+        usersResponse,
+        auditLogsResponse,
+        auditSummaryResponse,
       ] = await Promise.all([
         bookingService.getAllBookings(),
         listAllAssets({ page: 0, size: 1 }),
         searchAssets({ status: 'ACTIVE', page: 0, size: 1 }),
         searchAssets({ isBookable: true, page: 0, size: 1 }),
+        listUsers(),
+        getAuditLogs({ limit: 6 }),
+        getAuditSummary(),
       ]);
 
       const bookingItems = bookingsResponse.data || [];
+      const users = usersResponse.data || [];
       const pendingBookings = bookingItems.filter((booking) => booking.status === 'PENDING').length;
       const approvedBookings = bookingItems.filter((booking) => booking.status === 'APPROVED').length;
+      const adminUsers = users.filter((user) => user.role === 'ADMIN').length;
+      const technicianUsers = users.filter((user) => user.role === 'TECHNICIAN').length;
 
       setBookings(bookingItems);
+      setRecentAuditEvents(auditLogsResponse.data || []);
       setStats({
         totalAssets: allAssetsResponse.data?.totalElements || 0,
         activeAssets: activeAssetsResponse.data?.totalElements || 0,
@@ -74,6 +98,10 @@ const AdminDashboardPage = () => {
         totalBookings: bookingItems.length,
         pendingBookings,
         approvedBookings,
+        totalUsers: users.length,
+        adminUsers,
+        technicianUsers,
+        auditEventsLast24Hours: auditSummaryResponse.data?.last24Hours || 0,
       });
     } catch (dashboardError) {
       if (dashboardError?.response?.status === 403) {
@@ -145,6 +173,13 @@ const AdminDashboardPage = () => {
             >
               Manage Users
             </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/audit-logs')}
+              className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+            >
+              View Audit Trail
+            </button>
           </div>
         </section>
 
@@ -173,6 +208,60 @@ const AdminDashboardPage = () => {
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Approved Bookings</p>
             <p className="mt-3 text-3xl font-bold text-emerald-800">{stats.approvedBookings}</p>
           </article>
+          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Users</p>
+            <p className="mt-3 text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+          </article>
+          <article className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Admin Accounts</p>
+            <p className="mt-3 text-3xl font-bold text-blue-800">{stats.adminUsers}</p>
+          </article>
+          <article className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Technician Accounts</p>
+            <p className="mt-3 text-3xl font-bold text-indigo-800">{stats.technicianUsers}</p>
+          </article>
+          <article className="rounded-2xl border border-purple-200 bg-purple-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-purple-700">Audit Events (24h)</p>
+            <p className="mt-3 text-3xl font-bold text-purple-800">{stats.auditEventsLast24Hours}</p>
+          </article>
+        </section>
+
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Admin Activity</h2>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/audit-logs')}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-700 hover:bg-gray-100"
+            >
+              Full Audit Log
+            </button>
+          </div>
+
+          {recentAuditEvents.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+              No admin activity has been logged yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentAuditEvents.map((event) => (
+                <article key={event.id} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {normalizeLabel(event.action)} on {normalizeLabel(event.entityType)}
+                    </p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {formatDateTime(event.createdAt)}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-700">{event.details || 'No details provided.'}</p>
+                  <p className="mt-2 text-xs uppercase tracking-wide text-gray-500">
+                    Actor: {event.actorName || 'Unknown Admin'} ({event.actorRole || 'Unknown'})
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">

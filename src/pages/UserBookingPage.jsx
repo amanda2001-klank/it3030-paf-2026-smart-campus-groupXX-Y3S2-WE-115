@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import UserBookingTable from '../components/booking/user/UserBookingTable';
 import CreateBookingModal from '../components/booking/user/CreateBookingModal';
 import Toast from '../components/common/Toast';
 import * as bookingService from '../services/bookingService';
+import { getCurrentUser, isAdmin } from '../utils/auth';
 
 // ============================================================================
 // USER BOOKING PAGE - User can view and manage their own bookings
 // ============================================================================
 
 const UserBookingPage = () => {
+  const navigate = useNavigate();
+  
   // State management
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +27,13 @@ const UserBookingPage = () => {
     { id: 'PENDING', label: 'Pending Approval' },
     { id: 'APPROVED', label: 'Approved' },
   ];
+
+  // Redirect admins to their dashboard
+  useEffect(() => {
+    if (isAdmin(getCurrentUser().userRole)) {
+      navigate('/admin/bookings', { replace: true });
+    }
+  }, [navigate]);
 
   // Load bookings on component mount
   useEffect(() => {
@@ -92,12 +103,14 @@ const UserBookingPage = () => {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              + New Booking
-            </button>
+            {!isAdmin(getCurrentUser().userRole) && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                + New Booking
+              </button>
+            )}
           </div>
           <p className="text-gray-600">Manage your resource booking requests</p>
         </div>

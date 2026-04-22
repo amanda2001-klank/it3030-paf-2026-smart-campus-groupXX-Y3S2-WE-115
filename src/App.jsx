@@ -8,6 +8,7 @@ import AssetListPage from './pages/AssetListPage';
 import AssetListDetailPage from './pages/AssetListDetailPage';
 import AdminBookingPage from './pages/AdminBookingPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminAuditLogPage from './pages/AdminAuditLogPage';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import RegisterPage from './pages/RegisterPage';
@@ -169,6 +170,14 @@ const ProtectedShell = () => {
                   title="Incident Tickets"
                   description="Ticketing workflows can be added here with role-based triage and technician assignment."
                 />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-logs"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
+                <AdminAuditLogPage />
               </RoleRoute>
             }
           />

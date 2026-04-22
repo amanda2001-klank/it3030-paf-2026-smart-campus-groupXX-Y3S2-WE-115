@@ -1,6 +1,7 @@
 package com.smartcampus.catalog.controller;
 
 import com.smartcampus.auth.security.AuthenticatedUser;
+import com.smartcampus.audit.service.AdminAuditLogService;
 import com.smartcampus.catalog.dto.AssetRequest;
 import com.smartcampus.catalog.dto.AssetResponse;
 import com.smartcampus.catalog.dto.AssetSearchRequest;
@@ -31,9 +32,11 @@ import java.util.List;
 public class AssetController {
 
     private final AssetService assetService;
+    private final AdminAuditLogService adminAuditLogService;
 
-    public AssetController(AssetService assetService) {
+    public AssetController(AssetService assetService, AdminAuditLogService adminAuditLogService) {
         this.assetService = assetService;
+        this.adminAuditLogService = adminAuditLogService;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -42,8 +45,16 @@ public class AssetController {
             @Valid @ModelAttribute AssetRequest request,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
             Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(assetService.createAsset(request, currentUser(authentication).getUserId(), files));
+        AuthenticatedUser actor = currentUser(authentication);
+        AssetResponse createdAsset = assetService.createAsset(request, actor.getUserId(), files);
+        adminAuditLogService.logAction(
+            actor,
+            "ASSET_CREATED",
+            "ASSET",
+            createdAsset.getId(),
+            "Created asset " + createdAsset.getAssetCode() + " - " + createdAsset.getAssetName()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdAsset);
     }
 
     @GetMapping
@@ -91,20 +102,39 @@ public class AssetController {
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @RequestParam(value = "removeMediaIds", required = false) String removeMediaIds,
             Authentication authentication) {
-        return ResponseEntity.ok(assetService.updateAsset(
+        AuthenticatedUser actor = currentUser(authentication);
+        AssetResponse updatedAsset = assetService.updateAsset(
                 id,
                 request,
                 removeMediaIds,
-                currentUser(authentication).getUserId(),
+            actor.getUserId(),
                 files
-        ));
+        );
+        adminAuditLogService.logAction(
+            actor,
+            "ASSET_UPDATED",
+            "ASSET",
+            updatedAsset.getId(),
+            "Updated asset " + updatedAsset.getAssetCode() + " - " + updatedAsset.getAssetName()
+        );
+        return ResponseEntity.ok(updatedAsset);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'ASSET_MANAGER')")
     public ResponseEntity<Void> deleteAsset(
-            @PathVariable String id) {
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthenticatedUser actor = currentUser(authentication);
+        AssetResponse asset = assetService.getAssetById(id);
         assetService.deleteAsset(id);
+        adminAuditLogService.logAction(
+                actor,
+                "ASSET_DELETED",
+                "ASSET",
+                id,
+                "Deleted asset " + asset.getAssetCode() + " - " + asset.getAssetName()
+        );
         return ResponseEntity.noContent().build();
     }
 

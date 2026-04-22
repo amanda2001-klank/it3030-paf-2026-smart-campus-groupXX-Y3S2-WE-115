@@ -50,7 +50,7 @@ export const cancelBooking = (id) => {
  * @returns {Promise} Array of bookings
  */
 export const getAllBookings = (status) => {
-  const params = status ? { status } : {};
+  const params = status ? { status: status.toUpperCase() } : {};
   return apiClient.get('/api/bookings', { params });
 };
 
