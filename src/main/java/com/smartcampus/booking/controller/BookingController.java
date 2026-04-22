@@ -31,9 +31,10 @@ public class BookingController {
 
     /**
      * Create a new booking for the current authenticated user.
+     * Admins cannot create bookings.
      */
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and !hasRole('ADMIN')")
     public ResponseEntity<BookingResponse> createBooking(
             @Valid @RequestBody BookingRequest bookingRequest,
             Authentication authentication) {
@@ -66,9 +67,10 @@ public class BookingController {
 
     /**
      * Get current user's bookings.
+     * Admins cannot view their own bookings.
      */
     @GetMapping("/my")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("isAuthenticated() and !hasRole('ADMIN')")
     public ResponseEntity<List<BookingResponse>> getMyBookings(
             Authentication authentication) {
 

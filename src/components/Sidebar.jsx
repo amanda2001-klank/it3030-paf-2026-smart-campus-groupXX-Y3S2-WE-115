@@ -270,8 +270,6 @@ const Sidebar = () => {
 
   menuItems.push({ id: 'asset-list', label: 'Asset List', icon: '\u25A8', path: '/asset-list' });
 
-  menuItems.push({ id: 'bookings', label: 'My Bookings', icon: '\u2605', path: '/bookings' });
-
   if (hasAdminAccess) {
     menuItems.push({ id: 'admin-bookings', label: 'Booking Requests', icon: '\u25A4', path: '/admin/bookings' });
     menuItems.push({ id: 'tickets', label: 'Incident Tickets', icon: '\u25A9', path: '/tickets' });
