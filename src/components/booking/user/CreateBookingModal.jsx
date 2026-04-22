@@ -6,7 +6,7 @@ import * as catalogService from '../../../services/catalogService';
 // CREATE BOOKING MODAL - Modal for user to create new booking
 // ============================================================================
 
-const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
+const CreateBookingModal = ({ isOpen, onClose, onSuccess, prefilledResource }) => {
   // Form state
   const [formData, setFormData] = useState({
     resourceId: '',
@@ -25,12 +25,20 @@ const CreateBookingModal = ({ isOpen, onClose, onSuccess }) => {
   const [assets, setAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
 
-  // Load available assets when modal opens
+  // Load available assets when modal opens and pre-fill resource if provided
   useEffect(() => {
     if (isOpen) {
       loadAssets();
+      // Pre-fill resource if provided
+      if (prefilledResource) {
+        setFormData((prev) => ({
+          ...prev,
+          resourceId: prefilledResource.id || prefilledResource._id || '',
+          resourceName: prefilledResource.assetName || '',
+        }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, prefilledResource]);
 
   // Fetch bookable assets from catalog
   const loadAssets = async () => {
