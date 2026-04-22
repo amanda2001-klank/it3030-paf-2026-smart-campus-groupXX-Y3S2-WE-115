@@ -389,6 +389,11 @@ const AssetListDetailPage = () => {
     );
   }
 
+  const isAssetUnavailable =
+    !asset.isBookable ||
+    ['OUT_OF_SERVICE', 'MAINTENANCE', 'INACTIVE'].includes(asset.status);
+  const bookingTooltip = isAssetUnavailable ? 'This asset is unavailable' : 'Book this asset';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white px-8 py-6">
@@ -404,8 +409,18 @@ const AssetListDetailPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setIsBookingModalOpen(true)}
-                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                onClick={() => {
+                  if (!isAssetUnavailable) {
+                    setIsBookingModalOpen(true);
+                  }
+                }}
+                disabled={isAssetUnavailable}
+                title={bookingTooltip}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  isAssetUnavailable
+                    ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
                 Book now
               </button>
