@@ -264,6 +264,7 @@ const Sidebar = () => {
     },
   ];
 
+  //sidebar role-based visibility control
   if (hasManagerAccess) {
     menuItems.push({ id: 'assets', label: 'Assets', icon: '\u25A3', path: '/assets' });
   }
