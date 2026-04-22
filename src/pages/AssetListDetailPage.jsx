@@ -4,6 +4,7 @@ import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Toast from '../components/common/Toast';
 import AssetMediaPreviewDialog from '../components/catalog/AssetMediaPreviewDialog';
+import CreateBookingModal from '../components/booking/user/CreateBookingModal';
 import {
   downloadAssetMedia,
   getAssetById,
@@ -55,6 +56,7 @@ const AssetListDetailPage = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [downloadingId, setDownloadingId] = useState('');
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [previewState, setPreviewState] = useState({
     open: false,
     loading: false,
@@ -285,6 +287,7 @@ const AssetListDetailPage = () => {
               </button>
               <button
                 type="button"
+                onClick={() => setIsBookingModalOpen(true)}
                 className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
               >
                 Book now
@@ -544,6 +547,25 @@ const AssetListDetailPage = () => {
       />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Booking Modal */}
+      <CreateBookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        onSuccess={() => {
+          setIsBookingModalOpen(false);
+          setToast({ message: 'Booking created successfully!', type: 'success' });
+        }}
+        prefilledResource={asset}
+      />
     </div>
   );
 };
