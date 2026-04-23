@@ -19,6 +19,8 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
      */
     List<Booking> findByRequestedById(String userId);
 
+    boolean existsByRequestedByIdAndResourceIdAndStatus(String userId, String resourceId, BookingStatus status);
+
     /**
      * Find all bookings with a specific status
      * @param status the booking status to filter by

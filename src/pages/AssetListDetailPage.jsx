@@ -4,11 +4,16 @@ import StatusBadge from '../components/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Toast from '../components/common/Toast';
 import AssetMediaPreviewDialog from '../components/catalog/AssetMediaPreviewDialog';
+import RatingSummaryBadge from '../components/catalog/RatingSummaryBadge';
+import StarRatingInput from '../components/catalog/StarRatingInput';
 import CreateBookingModal from '../components/booking/user/CreateBookingModal';
 import {
+  createAssetRating,
   downloadAssetMedia,
   getAssetById,
+  getAssetRatings,
   previewAssetMedia,
+  updateMyAssetRating,
 } from '../services/catalogService';
 
 const formatDate = (value) => {
@@ -47,6 +52,30 @@ const getErrorMessage = (error, fallbackMessage) => {
   return error.response?.data?.message || fallbackMessage;
 };
 
+const createDefaultRatingsOverview = () => ({
+  averageRating: 0,
+  ratingCount: 0,
+  canReview: false,
+  reviewEligibilityMessage: '',
+  currentUserRating: null,
+  reviews: [],
+});
+
+const ReviewStars = ({ value }) => (
+  <div className="flex items-center gap-1" aria-hidden="true">
+    {Array.from({ length: 5 }, (_, index) => (
+      <svg
+        key={index}
+        className={`h-4 w-4 ${value >= index + 1 ? 'text-yellow-400' : 'text-gray-200'}`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.037 3.193a1 1 0 00.95.69h3.357c.969 0 1.371 1.24.588 1.81l-2.716 1.974a1 1 0 00-.364 1.118l1.037 3.193c.3.921-.755 1.688-1.538 1.118l-2.716-1.974a1 1 0 00-1.176 0l-2.716 1.974c-.783.57-1.838-.197-1.539-1.118l1.038-3.193a1 1 0 00-.364-1.118L2.167 8.62c-.783-.57-.38-1.81.588-1.81h3.357a1 1 0 00.951-.69l1.037-3.193z" />
+      </svg>
+    ))}
+  </div>
+);
+
 const AssetListDetailPage = () => {
   const navigate = useNavigate();
   const { assetId } = useParams();
@@ -56,6 +85,11 @@ const AssetListDetailPage = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [downloadingId, setDownloadingId] = useState('');
+  const [ratingsOverview, setRatingsOverview] = useState(createDefaultRatingsOverview);
+  const [ratingsLoading, setRatingsLoading] = useState(true);
+  const [ratingForm, setRatingForm] = useState({ rating: 0, reviewText: '' });
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState('');
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [previewState, setPreviewState] = useState({
     open: false,
@@ -129,27 +163,65 @@ const AssetListDetailPage = () => {
     };
   }, [asset]);
 
-  useEffect(() => {
+  const hydrateRatingsOverview = (overview) => {
+    const normalizedOverview = {
+      averageRating: Number(overview?.averageRating || 0),
+      ratingCount: Number(overview?.ratingCount || 0),
+      canReview: Boolean(overview?.canReview),
+      reviewEligibilityMessage: overview?.reviewEligibilityMessage || '',
+      currentUserRating: overview?.currentUserRating || null,
+      reviews: Array.isArray(overview?.reviews) ? overview.reviews : [],
+    };
+
+    setRatingsOverview(normalizedOverview);
+    setRatingForm({
+      rating: normalizedOverview.currentUserRating?.rating || 0,
+      reviewText: normalizedOverview.currentUserRating?.reviewText || '',
+    });
+    setRatingError('');
+  };
+
+  const loadAssetRecord = async (showPageLoader = true) => {
     if (!assetId) {
       setLoading(false);
+      setRatingsLoading(false);
       return;
     }
 
-    const loadAsset = async () => {
+    if (showPageLoader) {
       setLoading(true);
       setError('');
+    }
+    setRatingsLoading(true);
 
-      try {
-        const response = await getAssetById(assetId);
-        setAsset(response.data);
-      } catch (loadError) {
-        setError(getErrorMessage(loadError, 'Failed to load asset record.'));
-      } finally {
+    try {
+      const [assetResponse, ratingsResponse] = await Promise.all([
+        getAssetById(assetId),
+        getAssetRatings(assetId),
+      ]);
+
+      setAsset(assetResponse.data);
+      hydrateRatingsOverview(ratingsResponse.data);
+    } catch (loadError) {
+      const message = getErrorMessage(loadError, 'Failed to load asset record.');
+      if (showPageLoader) {
+        setError(message);
+      } else {
+        setToast({
+          type: 'error',
+          message,
+        });
+      }
+    } finally {
+      if (showPageLoader) {
         setLoading(false);
       }
-    };
+      setRatingsLoading(false);
+    }
+  };
 
-    loadAsset();
+  useEffect(() => {
+    loadAssetRecord(true);
   }, [assetId]);
 
   const closePreview = () => {
@@ -236,6 +308,51 @@ const AssetListDetailPage = () => {
     }
   };
 
+  const handleRatingSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!asset?.id) {
+      return;
+    }
+
+    if (!ratingForm.rating) {
+      setRatingError('Choose a star rating before submitting your review.');
+      return;
+    }
+
+    setRatingSubmitting(true);
+    setRatingError('');
+    const isUpdate = Boolean(ratingsOverview.currentUserRating);
+
+    try {
+      const payload = {
+        rating: ratingForm.rating,
+        reviewText: ratingForm.reviewText,
+      };
+
+      if (isUpdate) {
+        await updateMyAssetRating(asset.id, payload);
+      } else {
+        await createAssetRating(asset.id, payload);
+      }
+
+      await loadAssetRecord(false);
+      setToast({
+        type: 'success',
+        message: isUpdate ? 'Review updated successfully.' : 'Review submitted successfully.',
+      });
+    } catch (submitError) {
+      const message = getErrorMessage(submitError, 'Unable to save your review.');
+      setRatingError(message);
+      setToast({
+        type: 'error',
+        message,
+      });
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
@@ -272,6 +389,11 @@ const AssetListDetailPage = () => {
     );
   }
 
+  const isAssetUnavailable =
+    !asset.isBookable ||
+    ['OUT_OF_SERVICE', 'MAINTENANCE', 'INACTIVE'].includes(asset.status);
+  const bookingTooltip = isAssetUnavailable ? 'This asset is unavailable' : 'Book this asset';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="border-b border-gray-200 bg-white px-8 py-6">
@@ -287,8 +409,18 @@ const AssetListDetailPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setIsBookingModalOpen(true)}
-                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                onClick={() => {
+                  if (!isAssetUnavailable) {
+                    setIsBookingModalOpen(true);
+                  }
+                }}
+                disabled={isAssetUnavailable}
+                title={bookingTooltip}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  isAssetUnavailable
+                    ? 'cursor-not-allowed bg-gray-300 text-gray-600'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
                 Book now
               </button>
@@ -296,7 +428,16 @@ const AssetListDetailPage = () => {
             <p className="mt-5 text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">
               Asset Record
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-gray-900">{asset.assetName}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-semibold text-gray-900">{asset.assetName}</h1>
+              <RatingSummaryBadge
+                averageRating={asset.averageRating}
+                ratingCount={asset.ratingCount}
+                className="rounded-full bg-yellow-50 px-3 py-1.5"
+                textClassName="text-sm font-semibold text-yellow-700"
+                starClassName="h-4 w-4 text-yellow-500"
+              />
+            </div>
             <p className="mt-3 text-sm leading-6 text-gray-600">
               Asset code <span className="font-semibold text-gray-900">{asset.assetCode}</span> is
               currently listed as {asset.assetType?.name || 'an unknown type'} and can be reviewed
@@ -473,6 +614,155 @@ const AssetListDetailPage = () => {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm">
+              <div className="border-b border-gray-200 px-6 py-5">
+                <h2 className="text-xl font-semibold text-gray-900">Rate this asset</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Only student users with an approved booking for this asset can add one review and
+                  update it later.
+                </p>
+              </div>
+
+              <div className="p-6">
+                {ratingsLoading ? (
+                  <LoadingSpinner label="Loading rating details..." />
+                ) : ratingsOverview.canReview ? (
+                  <form onSubmit={handleRatingSubmit} className="space-y-5">
+                    {ratingsOverview.reviewEligibilityMessage ? (
+                      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-800">
+                        {ratingsOverview.reviewEligibilityMessage}
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Star rating</p>
+                      <div className="mt-3">
+                        <StarRatingInput
+                          value={ratingForm.rating}
+                          onChange={(value) =>
+                            setRatingForm((previous) => ({ ...previous, rating: value }))
+                          }
+                          disabled={ratingSubmitting}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="asset-review-text"
+                        className="text-sm font-semibold text-gray-900"
+                      >
+                        Text review
+                      </label>
+                      <textarea
+                        id="asset-review-text"
+                        value={ratingForm.reviewText}
+                        onChange={(event) =>
+                          setRatingForm((previous) => ({
+                            ...previous,
+                            reviewText: event.target.value,
+                          }))
+                        }
+                        rows={5}
+                        maxLength={1500}
+                        placeholder="Share what it was like to use this asset, what worked well, or what needs improvement."
+                        className="mt-3 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      />
+                      <p className="mt-2 text-xs text-gray-500">
+                        {ratingForm.reviewText.trim().length}/1500 characters
+                      </p>
+                    </div>
+
+                    {ratingError ? (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                        {ratingError}
+                      </div>
+                    ) : null}
+
+                    <button
+                      type="submit"
+                      disabled={ratingSubmitting}
+                      className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {ratingSubmitting
+                        ? 'Saving review...'
+                        : ratingsOverview.currentUserRating
+                          ? 'Update review'
+                          : 'Submit review'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium leading-6 text-amber-800">
+                    {ratingsOverview.reviewEligibilityMessage ||
+                      'You are not eligible to review this asset yet.'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-6 py-5">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Student reviews</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Reviews are shown newest first and reflect only one review per student user.
+                  </p>
+                </div>
+                <RatingSummaryBadge
+                  averageRating={ratingsOverview.averageRating}
+                  ratingCount={ratingsOverview.ratingCount}
+                  className="rounded-full bg-yellow-50 px-3 py-1.5"
+                  textClassName="text-sm font-semibold text-yellow-700"
+                  starClassName="h-4 w-4 text-yellow-500"
+                />
+              </div>
+
+              {ratingsLoading ? (
+                <div className="p-6">
+                  <LoadingSpinner label="Loading reviews..." />
+                </div>
+              ) : ratingsOverview.reviews.length ? (
+                <div className="divide-y divide-gray-200">
+                  {ratingsOverview.reviews.map((review) => (
+                    <div key={review.id} className="p-6">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <p className="text-base font-semibold text-gray-900">
+                              {review.userName || 'Student'}
+                            </p>
+                            <ReviewStars value={review.rating || 0} />
+                            <span className="text-sm font-semibold text-yellow-600">
+                              {review.rating}/5
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Updated {formatDate(review.updatedAt || review.createdAt)}
+                          </p>
+                        </div>
+                        {ratingsOverview.currentUserRating?.id === review.id ? (
+                          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                            Your review
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-4 text-sm leading-6 text-gray-600">
+                        {review.reviewText || 'No written review was added for this rating.'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center">
+                  <h3 className="text-lg font-semibold text-gray-900">No reviews yet</h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Once eligible students start rating this asset, their reviews will appear here.
+                  </p>
                 </div>
               )}
             </div>

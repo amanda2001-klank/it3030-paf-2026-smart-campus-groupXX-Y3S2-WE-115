@@ -70,6 +70,14 @@ export const searchAssets = (params) =>
 
 export const getAssetById = (id) => apiClient.get(`/api/catalog/assets/${id}`);
 
+export const getAssetRatings = (assetId) => apiClient.get(`/api/catalog/assets/${assetId}/ratings`);
+
+export const createAssetRating = (assetId, payload) =>
+  apiClient.post(`/api/catalog/assets/${assetId}/ratings`, payload);
+
+export const updateMyAssetRating = (assetId, payload) =>
+  apiClient.put(`/api/catalog/assets/${assetId}/ratings/my-rating`, payload);
+
 export const previewAssetMedia = (assetId, mediaId) =>
   apiClient.get(`/api/catalog/assets/${assetId}/media/${mediaId}`, {
     responseType: 'blob',

@@ -11,17 +11,22 @@ import com.smartcampus.catalog.dto.AssetMediaContent;
 import com.smartcampus.catalog.dto.PageResponse;
 import com.smartcampus.catalog.model.Asset;
 import com.smartcampus.catalog.model.AssetMedia;
+import com.smartcampus.catalog.model.AssetRating;
 import com.smartcampus.catalog.model.AssetStatus;
 import com.smartcampus.catalog.model.AssetType;
 import com.smartcampus.catalog.model.Location;
+import com.smartcampus.catalog.repository.AssetRatingRepository;
 import com.smartcampus.catalog.repository.AssetRepository;
 import com.smartcampus.catalog.repository.AssetTypeRepository;
 import com.smartcampus.catalog.repository.LocationRepository;
 import com.smartcampus.catalog.util.IdValidationUtils;
 import com.smartcampus.notification.service.NotificationService;
+import org.bson.Document;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -52,6 +57,7 @@ public class AssetService {
     );
 
     private final AssetRepository assetRepository;
+    private final AssetRatingRepository assetRatingRepository;
     private final AssetTypeRepository assetTypeRepository;
     private final LocationRepository locationRepository;
     private final AssetMediaStorageService assetMediaStorageService;
@@ -59,12 +65,14 @@ public class AssetService {
     private final NotificationService notificationService;
 
     public AssetService(AssetRepository assetRepository,
+                        AssetRatingRepository assetRatingRepository,
                         AssetTypeRepository assetTypeRepository,
                         LocationRepository locationRepository,
                         AssetMediaStorageService assetMediaStorageService,
                         MongoTemplate mongoTemplate,
                         NotificationService notificationService) {
         this.assetRepository = assetRepository;
+        this.assetRatingRepository = assetRatingRepository;
         this.assetTypeRepository = assetTypeRepository;
         this.locationRepository = locationRepository;
         this.assetMediaStorageService = assetMediaStorageService;
@@ -97,7 +105,7 @@ public class AssetService {
                     createdByUserId
             );
             notificationService.notifyAssetCreated(savedAsset);
-            return AssetResponse.fromAsset(savedAsset, assetType, location, media);
+            return AssetResponse.fromAsset(savedAsset, assetType, location, media, 0.0, 0L);
         } catch (RuntimeException ex) {
             assetMediaStorageService.deleteAllMediaForAsset(savedAsset.getId());
             assetRepository.deleteById(savedAsset.getId());
@@ -202,7 +210,15 @@ public class AssetService {
         AssetType assetType = getAssetTypeById(asset.getAssetTypeId());
         Location location = getLocationById(asset.getLocationId());
         List<AssetMedia> media = assetMediaStorageService.getMediaByAssetId(asset.getId());
-        return AssetResponse.fromAsset(asset, assetType, location, media);
+        RatingSummary ratingSummary = getRatingSummary(asset.getId());
+        return AssetResponse.fromAsset(
+                asset,
+                assetType,
+                location,
+                media,
+                ratingSummary.averageRating(),
+                ratingSummary.ratingCount()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -253,12 +269,21 @@ public class AssetService {
 
         List<AssetMedia> allMedia = assetMediaStorageService.getMediaByAssetId(asset.getId());
         notificationService.notifyAssetUpdated(updatedAsset);
-        return AssetResponse.fromAsset(updatedAsset, assetType, location, allMedia);
+        RatingSummary ratingSummary = getRatingSummary(updatedAsset.getId());
+        return AssetResponse.fromAsset(
+                updatedAsset,
+                assetType,
+                location,
+                allMedia,
+                ratingSummary.averageRating(),
+                ratingSummary.ratingCount()
+        );
     }
 
     public void deleteAsset(String id) {
         Asset asset = getAssetEntity(id);
         assetMediaStorageService.deleteAllMediaForAsset(asset.getId());
+        assetRatingRepository.deleteByAssetId(asset.getId());
         assetRepository.deleteById(asset.getId());
         notificationService.notifyAssetDeleted(asset.getId(), asset.getAssetName());
     }
@@ -341,15 +366,55 @@ public class AssetService {
                 .forEach(location -> locationsById.put(location.getId(), location));
 
         Map<String, List<AssetMedia>> mediaByAssetId = assetMediaStorageService.getMediaByAssetIds(assetIds);
+        Map<String, RatingSummary> ratingSummaryByAssetId = getRatingSummaries(assetIds);
 
         return assets.stream()
-                .map(asset -> AssetResponse.fromAsset(
-                        asset,
-                        assetTypesById.get(asset.getAssetTypeId()),
-                        locationsById.get(asset.getLocationId()),
-                        mediaByAssetId.getOrDefault(asset.getId(), List.of())
-                ))
+                .map(asset -> {
+                    RatingSummary ratingSummary = ratingSummaryByAssetId.getOrDefault(asset.getId(), RatingSummary.empty());
+                    return AssetResponse.fromAsset(
+                            asset,
+                            assetTypesById.get(asset.getAssetTypeId()),
+                            locationsById.get(asset.getLocationId()),
+                            mediaByAssetId.getOrDefault(asset.getId(), List.of()),
+                            ratingSummary.averageRating(),
+                            ratingSummary.ratingCount()
+                    );
+                })
                 .collect(Collectors.toList());
+    }
+
+    private RatingSummary getRatingSummary(String assetId) {
+        return getRatingSummaries(Set.of(assetId)).getOrDefault(assetId, RatingSummary.empty());
+    }
+
+    private Map<String, RatingSummary> getRatingSummaries(Set<String> assetIds) {
+        if (assetIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("assetId").in(assetIds)),
+                Aggregation.group("assetId")
+                        .avg("rating").as("averageRating")
+                        .count().as("ratingCount")
+        );
+
+        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, AssetRating.class, Document.class);
+        Map<String, RatingSummary> summaries = new HashMap<>();
+        for (Document document : results.getMappedResults()) {
+            Object groupedAssetId = document.get("_id");
+            String assetId = groupedAssetId != null ? groupedAssetId.toString() : null;
+            Number averageRating = document.get("averageRating", Number.class);
+            Number ratingCount = document.get("ratingCount", Number.class);
+
+            if (assetId != null) {
+                summaries.put(assetId, new RatingSummary(
+                        averageRating != null ? averageRating.doubleValue() : 0.0,
+                        ratingCount != null ? ratingCount.longValue() : 0L
+                ));
+            }
+        }
+        return summaries;
     }
 
     private Set<String> resolveLocationIdsByFilters(AssetSearchRequest request) {
@@ -521,5 +586,11 @@ public class AssetService {
                 sortBy,
                 direction.name()
         );
+    }
+
+    private record RatingSummary(double averageRating, long ratingCount) {
+        private static RatingSummary empty() {
+            return new RatingSummary(0.0, 0L);
+        }
     }
 }

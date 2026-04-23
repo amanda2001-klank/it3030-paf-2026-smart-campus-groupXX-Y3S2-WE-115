@@ -131,7 +131,7 @@ const ProtectedShell = () => {
           <Route
             path="/asset-list"
             element={
-              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+              <RoleRoute allowedRoles={[USER_ROLES.USER]}>
                 <AssetListPage />
               </RoleRoute>
             }
@@ -139,7 +139,7 @@ const ProtectedShell = () => {
           <Route
             path="/asset-list/:assetId"
             element={
-              <RoleRoute allowedRoles={ALL_AUTH_ROLES}>
+              <RoleRoute allowedRoles={[USER_ROLES.USER]}>
                 <AssetListDetailPage />
               </RoleRoute>
             }

@@ -113,13 +113,13 @@ const AssetMediaPreviewDialog = ({
               </div>
             </div>
 
-            <div className="rounded-2xl bg-blue-50 p-4">
+            {/* <div className="rounded-2xl bg-blue-50 p-4">
               <p className="text-sm font-medium text-blue-900">Usage</p>
               <p className="mt-2 text-sm leading-6 text-blue-800">
                 Use preview to inspect the current upload, then download the original file if it needs
                 to be shared or archived.
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

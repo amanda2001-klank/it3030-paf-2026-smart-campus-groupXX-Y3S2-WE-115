@@ -26,10 +26,17 @@ public class AssetResponse {
     private Boolean isBookable;
     private String createdById;
     private List<AssetMediaResponse> media;
+    private Double averageRating;
+    private Long ratingCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static AssetResponse fromAsset(Asset asset, AssetType assetType, Location location, List<AssetMedia> media) {
+    public static AssetResponse fromAsset(Asset asset,
+                                          AssetType assetType,
+                                          Location location,
+                                          List<AssetMedia> media,
+                                          Double averageRating,
+                                          Long ratingCount) {
         AssetResponse response = new AssetResponse();
         response.setId(asset.getId());
         response.setAssetCode(asset.getAssetCode());
@@ -46,6 +53,8 @@ public class AssetResponse {
         response.setMedia(media == null
                 ? Collections.emptyList()
                 : media.stream().map(AssetMediaResponse::fromAssetMedia).collect(Collectors.toList()));
+        response.setAverageRating(averageRating != null ? averageRating : 0.0);
+        response.setRatingCount(ratingCount != null ? ratingCount : 0L);
         response.setCreatedAt(asset.getCreatedAt());
         response.setUpdatedAt(asset.getUpdatedAt());
         return response;
@@ -153,6 +162,22 @@ public class AssetResponse {
 
     public void setMedia(List<AssetMediaResponse> media) {
         this.media = media;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Long getRatingCount() {
+        return ratingCount;
+    }
+
+    public void setRatingCount(Long ratingCount) {
+        this.ratingCount = ratingCount;
     }
 
     public LocalDateTime getCreatedAt() {

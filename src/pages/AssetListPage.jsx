@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Toast from '../components/common/Toast';
 import PaginationControls from '../components/catalog/PaginationControls';
+import RatingSummaryBadge from '../components/catalog/RatingSummaryBadge';
 import { listAllAssets, previewAssetMedia, searchAssets } from '../services/catalogService';
 
 const defaultAssetFilters = {
@@ -513,21 +514,25 @@ const AssetListPage = () => {
                         </div>
 
                         <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">
-                            {asset.location?.locationName || 'No linked location'}
-                          </p>
-                          <h3 className="mt-3 text-2xl font-semibold">{asset.assetName}</h3>
+                          <h3 className="text-2xl font-semibold">{asset.assetName}</h3>
                           <p className="mt-1 text-sm text-blue-50/90">{asset.assetCode}</p>
-                          <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                            <span className="rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
+                          <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+                            <span
+                              className={`rounded-full px-3 py-1.5 font-semibold backdrop-blur ${
+                                asset.isBookable
+                                  ? 'bg-emerald-500/20 text-emerald-100 ring-1 ring-emerald-300/40'
+                                  : 'bg-red-500/20 text-red-100 ring-1 ring-red-300/40'
+                              }`}
+                            >
                               {asset.isBookable ? 'Bookable' : 'Not bookable'}
                             </span>
-                            <span className="rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
-                              Capacity {asset.capacity ?? 'N/A'}
-                            </span>
-                            <span className="rounded-full bg-white/15 px-3 py-1.5 backdrop-blur">
-                              {asset.media?.length || 0} media
-                            </span>
+                            <RatingSummaryBadge
+                              averageRating={asset.averageRating}
+                              ratingCount={asset.ratingCount}
+                              className="rounded-full bg-gray-950/75 px-3 py-1.5 backdrop-blur"
+                              textClassName="text-xs font-semibold text-white"
+                              starClassName="h-3.5 w-3.5 text-yellow-400"
+                            />
                           </div>
                         </div>
                       </div>
