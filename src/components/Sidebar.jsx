@@ -271,6 +271,11 @@ const Sidebar = () => {
 
   if (currentRole === USER_ROLES.USER) {
     menuItems.push({ id: 'asset-list', label: 'Asset List', icon: '\u25A8', path: '/asset-list' });
+    menuItems.push({ id: 'my-tickets', label: 'My Tickets', icon: '\u25A9', path: '/tickets/my' });
+  }
+
+  if (currentRole === USER_ROLES.TECHNICIAN) {
+    menuItems.push({ id: 'tech-tickets', label: 'Assigned Tasks', icon: '\u25A9', path: '/dashboard/technician/tickets' });
   }
 
   if (hasAdminAccess) {

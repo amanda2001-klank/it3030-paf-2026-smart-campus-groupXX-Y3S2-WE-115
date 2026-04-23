@@ -17,6 +17,9 @@ import UserBookingPage from './pages/UserBookingPage';
 import UserDashboardPage from './pages/UserDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import IncidentTicketsPage from './pages/IncidentTicketsPage';
+import RaiseTicketPage from './pages/RaiseTicketPage';
+import MyTicketsPage from './pages/MyTicketsPage';
+import TechnicianTicketsPage from './pages/TechnicianTicketsPage';
 import {
   getCurrentUser,
   getDashboardPathForRole,
@@ -168,6 +171,30 @@ const ProtectedShell = () => {
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <IncidentTicketsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/tickets/raise"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.USER, USER_ROLES.ADMIN]}>
+                <RaiseTicketPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/tickets/my"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.USER, USER_ROLES.ADMIN]}>
+                <MyTicketsPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/dashboard/technician/tickets"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.TECHNICIAN, USER_ROLES.ADMIN]}>
+                <TechnicianTicketsPage />
               </RoleRoute>
             }
           />
