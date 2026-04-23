@@ -271,6 +271,7 @@ const Sidebar = () => {
 
   if (currentRole === USER_ROLES.USER) {
     menuItems.push({ id: 'asset-list', label: 'Asset List', icon: '\u25A8', path: '/asset-list' });
+    menuItems.push({ id: 'my-bookings', label: 'My Bookings', icon: '\u25A4', path: '/bookings' });
   }
 
   if (hasAdminAccess) {
