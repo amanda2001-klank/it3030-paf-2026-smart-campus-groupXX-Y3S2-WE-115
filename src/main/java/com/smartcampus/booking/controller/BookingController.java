@@ -5,9 +5,12 @@ import com.smartcampus.audit.service.AdminAuditLogService;
 import com.smartcampus.booking.dto.BookingRequest;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.model.BookingStatus;
+import com.smartcampus.booking.service.BookingReceiptService;
 import com.smartcampus.booking.service.BookingService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -22,10 +25,14 @@ import java.util.Map;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BookingReceiptService bookingReceiptService;
     private final AdminAuditLogService adminAuditLogService;
 
-    public BookingController(BookingService bookingService, AdminAuditLogService adminAuditLogService) {
+    public BookingController(BookingService bookingService, 
+                           BookingReceiptService bookingReceiptService,
+                           AdminAuditLogService adminAuditLogService) {
         this.bookingService = bookingService;
+        this.bookingReceiptService = bookingReceiptService;
         this.adminAuditLogService = adminAuditLogService;
     }
 
@@ -140,6 +147,38 @@ public class BookingController {
         AuthenticatedUser currentUser = currentUser(authentication);
         BookingResponse response = bookingService.cancelBooking(id, currentUser.getUserId());
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Download booking receipt as PDF
+     * Users can download their own booking receipts
+     * Admins can download any booking receipt
+     */
+    @GetMapping("/{id}/receipt")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> downloadBookingReceipt(
+            @PathVariable String id,
+            Authentication authentication) {
+
+        BookingResponse booking = bookingService.getBookingById(id);
+        AuthenticatedUser currentUser = currentUser(authentication);
+
+        // Check authorization: user can only download their own receipt, or admin can download any
+        boolean isAdmin = currentUser.getRole() != null && currentUser.getRole().contains("ADMIN");
+        if (!isAdmin && !booking.getRequestedById().equals(currentUser.getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        // Generate PDF receipt
+        byte[] pdfContent = bookingReceiptService.generateBookingReceiptPdf(bookingService.getBookingEntity(id));
+
+        // Prepare response headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "Booking_Receipt_" + id + ".pdf");
+        headers.setContentLength(pdfContent.length);
+
+        return new ResponseEntity<>(pdfContent, headers, HttpStatus.OK);
     }
 
     /**

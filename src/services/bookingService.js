@@ -40,6 +40,18 @@ export const cancelBooking = (id) => {
   return apiClient.delete(`/api/bookings/${id}`);
 };
 
+/**
+ * Download booking receipt as PDF
+ * @param {string} id - Booking ID
+ * @returns {Promise} PDF file as ArrayBuffer
+ */
+export const downloadBookingReceipt = async (id) => {
+  const response = await apiClient.get(`/api/bookings/${id}/receipt`, {
+    responseType: 'arraybuffer'
+  });
+  return response.data;
+};
+
 // ============================================================================
 // ADMIN-SIDE BOOKING FUNCTIONS
 // ============================================================================

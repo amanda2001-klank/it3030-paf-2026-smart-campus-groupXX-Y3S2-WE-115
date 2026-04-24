@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
+import * as bookingService from '../../../services/bookingService';
 
 // ============================================================================
-// USER BOOKING TABLE - Display user's bookings with cancel action
+// USER BOOKING TABLE - Display user's bookings with cancel action and download receipt
 // ============================================================================
 
 const UserBookingTable = ({ bookings, onCancel, loading }) => {
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  // Download receipt PDF
+  const handleDownloadReceipt = async (bookingId) => {
+    try {
+      setDownloadingId(bookingId);
+      const response = await bookingService.downloadBookingReceipt(bookingId);
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Booking_Receipt_${bookingId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download receipt:', error);
+      alert('Failed to download receipt. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
   // Format date and time: "Oct 24, 2023 | 09:00 – 11:30"
   const formatDateTime = (startTime, endTime) => {
     const startDate = new Date(startTime);
@@ -67,12 +93,31 @@ const UserBookingTable = ({ bookings, onCancel, loading }) => {
   const renderAction = (booking) => {
     if (booking.status === 'APPROVED') {
       return (
-        <button
-          onClick={() => onCancel(booking.id)}
-          className="px-3 py-1 text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 rounded-lg transition-colors"
-        >
-          Cancel
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleDownloadReceipt(booking.id)}
+            disabled={downloadingId === booking.id}
+            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded-lg transition-colors flex items-center gap-1"
+            title="Download booking receipt as PDF"
+          >
+            {downloadingId === booking.id ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                Downloading...
+              </>
+            ) : (
+              <>
+                📥 Receipt
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => onCancel(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       );
     }
 
