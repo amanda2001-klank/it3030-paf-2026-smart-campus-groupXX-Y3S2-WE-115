@@ -5,13 +5,18 @@ import com.smartcampus.ticketing.dto.CommentRequest;
 import com.smartcampus.ticketing.dto.IncidentRequest;
 import com.smartcampus.ticketing.dto.IncidentResponse;
 import com.smartcampus.ticketing.service.IncidentService;
+import com.smartcampus.ticketing.service.IncidentMediaStorageService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,19 +26,32 @@ import java.util.List;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final IncidentMediaStorageService incidentMediaStorageService;
 
-    public IncidentController(IncidentService incidentService) {
+    public IncidentController(IncidentService incidentService, IncidentMediaStorageService incidentMediaStorageService) {
         this.incidentService = incidentService;
+        this.incidentMediaStorageService = incidentMediaStorageService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<IncidentResponse> createIncident(
-            @Valid @RequestBody IncidentRequest request,
+            @Valid @ModelAttribute IncidentRequest request,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
             Authentication authentication) {
         AuthenticatedUser actor = currentUser(authentication);
-        IncidentResponse created = incidentService.createIncident(request, actor.getUserId(), actor.getUserName());
+        IncidentResponse created = incidentService.createIncident(request, actor.getUserId(), actor.getUserName(), files);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @GetMapping("/media/**")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Resource> previewMedia(jakarta.servlet.http.HttpServletRequest request) {
+        String path = request.getRequestURI().split("/media/")[1];
+        Resource resource = incidentMediaStorageService.loadMediaAsResource(path);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_JPEG_VALUE) // Simplified
+                .body(resource);
     }
 
     @GetMapping

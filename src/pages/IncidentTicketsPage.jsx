@@ -6,6 +6,7 @@ import {
   updateIncident, 
   addComment 
 } from '../services/incidentService';
+import { API_BASE_URL } from '../services/apiClient';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import IncidentStatusBadge from '../components/incident/IncidentStatusBadge';
 import IncidentPriorityBadge from '../components/incident/IncidentPriorityBadge';
@@ -217,7 +218,13 @@ const IncidentTicketsPage = () => {
           </section>
 
           {/* Evidence Attachments */}
-          <EvidenceAttachments attachments={selectedIncident?.attachments} />
+          <EvidenceAttachments 
+            attachments={selectedIncident?.attachmentUrls?.map((url, index) => ({ 
+              id: index, 
+              url: `${API_BASE_URL}/api/ticketing/incidents/media/${url}`, 
+              name: `Attachment ${index + 1}` 
+            }))} 
+          />
         </div>
 
         {/* Right Column */}

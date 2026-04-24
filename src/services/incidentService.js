@@ -21,8 +21,10 @@ export const getIncidentById = (id) => {
   return apiClient.get(`/api/ticketing/incidents/${id}`);
 };
 
-export const createIncident = (payload) => {
-  return apiClient.post('/api/ticketing/incidents', payload);
+export const createIncident = (formData) => {
+  return apiClient.post('/api/ticketing/incidents', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  });
 };
 
 export const updateIncident = (id, payload) => {

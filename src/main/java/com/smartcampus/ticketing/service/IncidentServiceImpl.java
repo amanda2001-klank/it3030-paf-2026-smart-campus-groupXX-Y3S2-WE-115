@@ -10,6 +10,7 @@ import com.smartcampus.ticketing.model.IncidentStatus;
 import com.smartcampus.ticketing.repository.IncidentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,14 +22,18 @@ public class IncidentServiceImpl implements IncidentService {
 
     private final IncidentRepository incidentRepository;
     private final com.smartcampus.auth.service.AdminUserService adminUserService;
+    private final IncidentMediaStorageService incidentMediaStorageService;
 
-    public IncidentServiceImpl(IncidentRepository incidentRepository, com.smartcampus.auth.service.AdminUserService adminUserService) {
+    public IncidentServiceImpl(IncidentRepository incidentRepository, 
+                               com.smartcampus.auth.service.AdminUserService adminUserService,
+                               IncidentMediaStorageService incidentMediaStorageService) {
         this.incidentRepository = incidentRepository;
         this.adminUserService = adminUserService;
+        this.incidentMediaStorageService = incidentMediaStorageService;
     }
 
     @Override
-    public IncidentResponse createIncident(IncidentRequest request, String reporterId, String reporterName) {
+    public IncidentResponse createIncident(IncidentRequest request, String reporterId, String reporterName, List<MultipartFile> files) {
         Incident incident = new Incident();
         incident.setTicketNumber("INC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         incident.setTitle(request.getTitle());
@@ -39,7 +44,13 @@ public class IncidentServiceImpl implements IncidentService {
         incident.setReportedByName(reporterName);
         
         Incident saved = incidentRepository.save(incident);
-        return IncidentResponse.fromIncident(saved);
+        
+        // Handle files after saving to get the ID
+        List<String> filePaths = incidentMediaStorageService.saveMediaFiles(saved.getId(), files);
+        saved.setAttachmentUrls(filePaths);
+        
+        Incident finalSaved = incidentRepository.save(saved);
+        return IncidentResponse.fromIncident(finalSaved);
     }
 
     @Override
