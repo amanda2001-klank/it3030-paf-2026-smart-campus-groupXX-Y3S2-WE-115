@@ -32,6 +32,7 @@ const IncidentTicketsPage = () => {
   const [technicians, setTechnicians] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({ title: '', priority: '', description: '' });
+  const [workflowData, setWorkflowData] = useState({ status: '', technicianId: '' });
 
   const fetchData = async () => {
     setLoading(true);
@@ -57,6 +58,10 @@ const IncidentTicketsPage = () => {
   };
 
   const handleSelectIncident = async (id) => {
+    // Set basic info immediately from the list to improve perceived performance
+    const basicInfo = incidents.find(inc => inc.id === id);
+    if (basicInfo) setSelectedIncident(basicInfo);
+    
     try {
       const res = await getIncidentById(id);
       setSelectedIncident(res.data);
@@ -65,13 +70,23 @@ const IncidentTicketsPage = () => {
     }
   };
 
-  const handleUpdateStatus = async (status) => {
+  const handleSaveWorkflow = async () => {
     if (!selectedIncident) return;
     setUpdating(true);
     try {
-      await updateIncident(selectedIncident.id, { status });
-      setSelectedIncident(prev => ({ ...prev, status }));
-      setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? { ...inc, status } : inc));
+      const res = await updateIncident(selectedIncident.id, { 
+        title: selectedIncident.title,
+        description: selectedIncident.description,
+        priority: selectedIncident.priority,
+        status: workflowData.status,
+        assignedTechnicianId: workflowData.technicianId 
+      });
+      setSelectedIncident(res.data);
+      setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? res.data : inc));
+      alert('Workflow updated successfully');
+    } catch (error) {
+      console.error('Failed to update workflow:', error);
+      alert('Failed to update workflow');
     } finally {
       setUpdating(false);
     }
@@ -103,18 +118,8 @@ const IncidentTicketsPage = () => {
     }
   };
 
-  const handleAssignTechnician = async (techId) => {
-    if (!selectedIncident) return;
-    setUpdating(true);
-    try {
-      const res = await updateIncident(selectedIncident.id, { assignedTechnicianId: techId });
-      setSelectedIncident(res.data);
-      setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? res.data : inc));
-    } catch (error) {
-      console.error('Failed to assign technician:', error);
-    } finally {
-      setUpdating(false);
-    }
+  const handleAssignTechnician = (techId) => {
+    setWorkflowData(prev => ({ ...prev, technicianId: techId }));
   };
 
   const handleOpenEdit = () => {
@@ -145,6 +150,16 @@ const IncidentTicketsPage = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Update workflowData when selectedIncident changes
+  useEffect(() => {
+    if (selectedIncident) {
+      setWorkflowData({
+        status: selectedIncident.status || '',
+        technicianId: selectedIncident.assignedTechnicianId || ''
+      });
+    }
+  }, [selectedIncident]);
 
   if (loading) return <LoadingSpinner label="Loading incidents..." />;
 
@@ -235,7 +250,8 @@ const IncidentTicketsPage = () => {
                     <th className="px-6 py-4">TITLE</th>
                     <th className="px-6 py-4 text-center">PRIORITY</th>
                     <th className="px-6 py-4 text-center">STATUS</th>
-                    <th className="rounded-r-xl px-6 py-4">ASSIGNED</th>
+                    <th className="px-6 py-4">ASSIGNED</th>
+                    <th className="rounded-r-xl px-6 py-4 text-right">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -269,6 +285,28 @@ const IncidentTicketsPage = () => {
                           )}
                         </div>
                       </td>
+                      <td className="px-6 py-6 text-right">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            onClick={() => { handleSelectIncident(inc.id); handleOpenEdit(); }}
+                            className="rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100 transition"
+                            title="Edit Ticket"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTicket(inc.id)}
+                            className="rounded-lg bg-red-50 p-2 text-red-600 hover:bg-red-100 transition"
+                            title="Delete Ticket"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -288,6 +326,41 @@ const IncidentTicketsPage = () => {
 
         {/* Right Column */}
         <div className="space-y-8">
+          {/* Ticket Overview Card */}
+          <section className="rounded-3xl bg-white p-8 shadow-sm">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">Ticket Overview</h3>
+              {selectedIncident && (
+                <div className="flex gap-2">
+                  <IncidentPriorityBadge priority={selectedIncident.priority} />
+                  <IncidentStatusBadge status={selectedIncident.status} />
+                </div>
+              )}
+            </div>
+            {selectedIncident ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">REPORTED BY</label>
+                  <p className="text-sm font-medium text-slate-700">{selectedIncident.reportedByName || 'Unknown'}</p>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">DESCRIPTION</label>
+                  <p className="text-sm text-slate-600 leading-relaxed line-clamp-3" title={selectedIncident.description}>
+                    {selectedIncident.description}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">CREATED ON</label>
+                  <p className="text-sm text-slate-600">
+                    {selectedIncident.createdAt ? new Date(selectedIncident.createdAt).toLocaleString() : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm italic text-slate-400">Select a ticket to view details</p>
+            )}
+          </section>
+
           {/* Ticket Workflow Card */}
           <section className="rounded-3xl bg-[#1D4ED8] p-8 text-white shadow-xl shadow-blue-200">
             <div className="flex items-start gap-4 mb-8">
@@ -307,8 +380,8 @@ const IncidentTicketsPage = () => {
                 <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest opacity-60">UPDATE STATUS</label>
                 <div className="relative">
                   <select 
-                    value={selectedIncident?.status || ''}
-                    onChange={(e) => handleUpdateStatus(e.target.value)}
+                    value={workflowData.status}
+                    onChange={(e) => setWorkflowData({ ...workflowData, status: e.target.value })}
                     className="w-full appearance-none rounded-xl bg-white/10 px-5 py-4 text-sm font-bold backdrop-blur-md focus:bg-white/20 focus:outline-none border border-white/10"
                   >
                     <option value="OPEN" className="text-slate-800">OPEN</option>
@@ -326,7 +399,7 @@ const IncidentTicketsPage = () => {
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <select 
-                      value={selectedIncident?.assignedTechnicianId || ''}
+                      value={workflowData.technicianId}
                       onChange={(e) => handleAssignTechnician(e.target.value)}
                       className="w-full appearance-none rounded-xl bg-white/10 px-5 py-4 text-sm font-bold backdrop-blur-md focus:bg-white/20 focus:outline-none border border-white/10 text-white"
                     >
@@ -344,6 +417,14 @@ const IncidentTicketsPage = () => {
                   </div>
                 </div>
               </div>
+
+              <button 
+                onClick={handleSaveWorkflow}
+                disabled={updating || !selectedIncident}
+                className="w-full rounded-xl bg-emerald-500 py-4 text-sm font-bold text-white shadow-xl shadow-emerald-900/20 transition hover:bg-emerald-600 active:scale-[0.98] mt-2 disabled:opacity-50"
+              >
+                {updating ? 'Saving...' : 'Save Workflow Changes'}
+              </button>
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <button 
