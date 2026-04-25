@@ -52,11 +52,18 @@ const TechnicianTicketsPage = () => {
     if (!selectedIncident) return;
     setUpdating(true);
     try {
-      await updateIncident(selectedIncident.id, { status });
+      await updateIncident(selectedIncident.id, { 
+        title: selectedIncident.title,
+        description: selectedIncident.description,
+        category: selectedIncident.category,
+        priority: selectedIncident.priority,
+        status 
+      });
       setSelectedIncident(prev => ({ ...prev, status }));
       setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? { ...inc, status } : inc));
     } catch (error) {
         console.error('Failed to update status:', error);
+        alert('Failed to update status. Please ensure all required fields are valid.');
     } finally {
       setUpdating(false);
     }
@@ -172,6 +179,7 @@ const TechnicianTicketsPage = () => {
                       <option value="OPEN" className="text-slate-800">OPEN</option>
                       <option value="IN_PROGRESS" className="text-slate-800">IN_PROGRESS</option>
                       <option value="RESOLVED" className="text-slate-800">RESOLVED</option>
+                      <option value="CLOSED" className="text-slate-800">CLOSED</option>
                     </select>
                   </div>
                 </div>

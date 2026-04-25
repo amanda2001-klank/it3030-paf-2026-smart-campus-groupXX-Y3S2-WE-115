@@ -31,7 +31,7 @@ const IncidentTicketsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [technicians, setTechnicians] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editData, setEditData] = useState({ title: '', priority: '', description: '' });
+  const [editData, setEditData] = useState({ title: '', priority: '', description: '', category: '' });
   const [workflowData, setWorkflowData] = useState({ status: '', technicianId: '' });
 
   const fetchData = async () => {
@@ -82,6 +82,7 @@ const IncidentTicketsPage = () => {
       const res = await updateIncident(selectedIncident.id, { 
         title: selectedIncident.title,
         description: selectedIncident.description,
+        category: selectedIncident.category,
         priority: selectedIncident.priority,
         status: workflowData.status,
         assignedTechnicianId: workflowData.technicianId 
@@ -132,7 +133,8 @@ const IncidentTicketsPage = () => {
     setEditData({
       title: selectedIncident.title,
       priority: selectedIncident.priority,
-      description: selectedIncident.description
+      description: selectedIncident.description,
+      category: selectedIncident.category
     });
     setShowEditModal(true);
   };
@@ -495,6 +497,19 @@ const IncidentTicketsPage = () => {
                   onChange={(e) => setEditData({ ...editData, title: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
+                <select 
+                  value={editData.category}
+                  onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-blue-400 focus:outline-none"
+                >
+                  <option value="TECHNICAL">TECHNICAL</option>
+                  <option value="FACILITIES">FACILITIES</option>
+                  <option value="EQUIPMENT">EQUIPMENT</option>
+                  <option value="OTHER">OTHER</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Priority</label>
