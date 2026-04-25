@@ -14,6 +14,7 @@ const AssetManagerDashboardPage = () => {
     activeAssets: 0,
     bookableAssets: 0,
     totalAssetTypes: 0,
+    totalLocations: 0,
     myBookings: 0,
     activeIncidents: 0,
   });
@@ -23,7 +24,7 @@ const AssetManagerDashboardPage = () => {
     setError('');
 
     try {
-      const [allAssetsResponse, activeAssetsResponse, bookableAssetsResponse, locationsResponse, assetTypesResponse, myBookingsResponse] =
+      const [allAssetsResponse, activeAssetsResponse, bookableAssetsResponse, locationsResponse, assetTypesResponse, myBookingsResponse, incidentStatsResponse] =
         await Promise.all([
           listAllAssets({ page: 0, size: 1 }),
           searchAssets({ status: 'ACTIVE', page: 0, size: 1 }),

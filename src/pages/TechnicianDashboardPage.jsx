@@ -11,6 +11,8 @@ const TechnicianDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({
+    maintenanceAssets: 0,
+    outOfServiceAssets: 0,
     myBookings: 0,
     assignedTickets: 0,
     criticalTickets: 0,

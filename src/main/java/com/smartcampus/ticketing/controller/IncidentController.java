@@ -55,7 +55,7 @@ public class IncidentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ASSET_MANAGER', 'TECHNICIAN')")
     public ResponseEntity<List<IncidentResponse>> getAllIncidents() {
         return ResponseEntity.ok(incidentService.getAllIncidents());
     }
@@ -81,12 +81,26 @@ public class IncidentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<IncidentResponse> updateIncident(
             @PathVariable String id,
             @Valid @RequestBody IncidentRequest request,
             Authentication authentication) {
         AuthenticatedUser actor = currentUser(authentication);
+        IncidentResponse existing = incidentService.getIncidentById(id);
+        
+        // Admins and Technicians can always update.
+        // Reporters can only update if it's still OPEN and they are the owner.
+        boolean isStaff = "ADMIN".equals(actor.getRole()) || "TECHNICIAN".equals(actor.getRole());
+        if (!isStaff) {
+            if (!existing.getReportedById().equals(actor.getUserId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            if (!"OPEN".equals(existing.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+        }
+
         return ResponseEntity.ok(incidentService.updateIncident(id, request, actor.getUserId(), actor.getUserName()));
     }
 
@@ -103,8 +117,21 @@ public class IncidentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteIncident(@PathVariable String id) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteIncident(@PathVariable String id, Authentication authentication) {
+        AuthenticatedUser actor = currentUser(authentication);
+        IncidentResponse existing = incidentService.getIncidentById(id);
+
+        boolean isAdmin = "ADMIN".equals(actor.getRole());
+        if (!isAdmin) {
+            if (!existing.getReportedById().equals(actor.getUserId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            if (!"OPEN".equals(existing.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+        }
+
         incidentService.deleteIncident(id);
         return ResponseEntity.noContent().build();
     }
