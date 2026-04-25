@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { getMyBookings } from '../services/bookingService';
 import { listAllAssets, listAssetTypes, listLocations, searchAssets } from '../services/catalogService';
+import { getIncidentStats } from '../services/incidentService';
 
 const AssetManagerDashboardPage = () => {
   const navigate = useNavigate();
@@ -12,9 +13,9 @@ const AssetManagerDashboardPage = () => {
     totalAssets: 0,
     activeAssets: 0,
     bookableAssets: 0,
-    totalLocations: 0,
     totalAssetTypes: 0,
     myBookings: 0,
+    activeIncidents: 0,
   });
 
   const loadDashboard = async () => {
@@ -30,6 +31,7 @@ const AssetManagerDashboardPage = () => {
           listLocations({ page: 0, size: 1 }),
           listAssetTypes({ page: 0, size: 1 }),
           getMyBookings(),
+          getIncidentStats(),
         ]);
 
       setStats({
@@ -39,6 +41,7 @@ const AssetManagerDashboardPage = () => {
         totalLocations: locationsResponse.data?.totalElements || 0,
         totalAssetTypes: assetTypesResponse.data?.totalElements || 0,
         myBookings: (myBookingsResponse.data || []).length,
+        activeIncidents: (incidentStatsResponse.data?.inProgress || 0) + (incidentStatsResponse.data?.critical || 0),
       });
     } catch (dashboardError) {
       const message = dashboardError?.response?.data?.message;
@@ -139,6 +142,10 @@ const AssetManagerDashboardPage = () => {
           <article className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">My Bookings</p>
             <p className="mt-3 text-3xl font-bold text-amber-800">{stats.myBookings}</p>
+          </article>
+          <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">Active Incidents</p>
+            <p className="mt-3 text-3xl font-bold text-rose-800">{stats.activeIncidents}</p>
           </article>
         </section>
       </div>

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { getMyBookings } from '../services/bookingService';
 import { listAllAssets, searchAssets } from '../services/catalogService';
+import { getMyReportedIncidents } from '../services/incidentService';
+import StatusBadge from '../components/StatusBadge';
 
 const UserDashboardPage = () => {
   const navigate = useNavigate();
@@ -14,21 +16,26 @@ const UserDashboardPage = () => {
     myBookings: 0,
     pendingBookings: 0,
     approvedBookings: 0,
+    totalTickets: 0,
+    openTickets: 0,
   });
   const [recentBookings, setRecentBookings] = useState([]);
+  const [recentTickets, setRecentTickets] = useState([]);
 
   const loadDashboard = async () => {
     setLoading(true);
     setError('');
 
     try {
-      const [allAssetsResponse, bookableAssetsResponse, myBookingsResponse] = await Promise.all([
+      const [allAssetsResponse, bookableAssetsResponse, myBookingsResponse, myIncidentsResponse] = await Promise.all([
         listAllAssets({ page: 0, size: 1 }),
         searchAssets({ isBookable: true, page: 0, size: 1 }),
         getMyBookings(),
+        getMyReportedIncidents(),
       ]);
 
       const bookingItems = myBookingsResponse.data || [];
+      const incidentItems = myIncidentsResponse.data || [];
 
       setStats({
         totalAssets: allAssetsResponse.data?.totalElements || 0,
@@ -36,12 +43,21 @@ const UserDashboardPage = () => {
         myBookings: bookingItems.length,
         pendingBookings: bookingItems.filter((item) => item.status === 'PENDING').length,
         approvedBookings: bookingItems.filter((item) => item.status === 'APPROVED').length,
+        totalTickets: incidentItems.length,
+        openTickets: incidentItems.filter((item) => item.status !== 'RESOLVED' && item.status !== 'CLOSED').length,
       });
 
       // Set recent bookings (newest first)
       setRecentBookings(
         [...bookingItems]
           .sort((a, b) => new Date(b.createdAt || b.startTime) - new Date(a.createdAt || a.startTime))
+          .slice(0, 5)
+      );
+
+      // Set recent tickets
+      setRecentTickets(
+        [...incidentItems]
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 5)
       );
     } catch (dashboardError) {
@@ -126,60 +142,114 @@ const UserDashboardPage = () => {
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Approved Bookings</p>
             <p className="mt-3 text-3xl font-bold text-emerald-800">{stats.approvedBookings}</p>
           </article>
+          <article className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Total Tickets</p>
+            <p className="mt-3 text-3xl font-bold text-indigo-800">{stats.totalTickets}</p>
+          </article>
+          <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">Open Tickets</p>
+            <p className="mt-3 text-3xl font-bold text-rose-800">{stats.openTickets}</p>
+          </article>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-slate-900">Recent Bookings</h2>
-            <button
-              type="button"
-              onClick={() => navigate('/bookings')}
-              className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-            >
-              View All
-            </button>
+        <section className="grid gap-8 lg:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Recent Bookings</h2>
+              <button
+                type="button"
+                onClick={() => navigate('/bookings')}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                View All
+              </button>
+            </div>
+
+            {recentBookings.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
+                <p className="text-slate-500">No recent bookings to display.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentBookings.map((booking) => (
+                  <div
+                    key={booking.id}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100"
+                  >
+                    <div>
+                      <p className="font-semibold text-slate-900">{booking.resourceName}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(booking.startTime).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                          booking.status === 'APPROVED'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : booking.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {booking.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {recentBookings.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
-              <p className="text-slate-500">No recent bookings to display.</p>
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900">Recent Tickets</h2>
+              <button
+                type="button"
+                onClick={() => navigate('/tickets/my')}
+                className="text-sm font-semibold text-rose-600 hover:text-rose-700"
+              >
+                View My Tickets
+              </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {recentBookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100"
-                >
-                  <div>
-                    <p className="font-semibold text-slate-900">{booking.resourceName}</p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(booking.startTime).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
+
+            {recentTickets.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
+                <p className="text-slate-500">No recent tickets to display.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentTickets.map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100"
+                  >
+                    <div className="min-w-0 flex-1 pr-4">
+                      <p className="truncate font-semibold text-slate-900">{ticket.title}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(ticket.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                        {' \u2022 '}
+                        {ticket.category}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <StatusBadge status={ticket.status} />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
-                        booking.status === 'APPROVED'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : booking.status === 'PENDING'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-slate-200 text-slate-600'
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </div>

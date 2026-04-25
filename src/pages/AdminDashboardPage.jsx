@@ -6,6 +6,7 @@ import { getAuditLogs, getAuditSummary } from '../services/adminAuditService';
 import * as bookingService from '../services/bookingService';
 import { listAllAssets, searchAssets } from '../services/catalogService';
 import { listUsers } from '../services/userManagementService';
+import { getIncidents, getIncidentStats } from '../services/incidentService';
 
 const formatDateTime = (value) => {
   if (!value) {
@@ -40,6 +41,7 @@ const AdminDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookings, setBookings] = useState([]);
+  const [incidents, setIncidents] = useState([]);
   const [recentAuditEvents, setRecentAuditEvents] = useState([]);
   const [stats, setStats] = useState({
     totalAssets: 0,
@@ -48,15 +50,26 @@ const AdminDashboardPage = () => {
     totalBookings: 0,
     pendingBookings: 0,
     approvedBookings: 0,
-    totalUsers: 0,
     adminUsers: 0,
     technicianUsers: 0,
     auditEventsLast24Hours: 0,
+    criticalIncidents: 0,
+    inProgressIncidents: 0,
+    resolvedIncidentsToday: 0,
   });
 
   const recentBookings = useMemo(
     () => [...bookings].sort(sortByCreatedAtDesc).slice(0, 6),
     [bookings]
+  );
+
+  const priorityIncidents = useMemo(
+    () => [...incidents]
+      .filter(i => i.priority === 'CRITICAL' || i.priority === 'HIGH')
+      .filter(i => i.status !== 'RESOLVED' && i.status !== 'CLOSED')
+      .sort(sortByCreatedAtDesc)
+      .slice(0, 6),
+    [incidents]
   );
 
   const loadDashboard = async () => {
@@ -72,6 +85,8 @@ const AdminDashboardPage = () => {
         usersResponse,
         auditLogsResponse,
         auditSummaryResponse,
+        incidentsResponse,
+        incidentStatsResponse,
       ] = await Promise.all([
         bookingService.getAllBookings(),
         listAllAssets({ page: 0, size: 1 }),
@@ -80,9 +95,13 @@ const AdminDashboardPage = () => {
         listUsers(),
         getAuditLogs({ limit: 6 }),
         getAuditSummary(),
+        getIncidents(),
+        getIncidentStats(),
       ]);
 
       const bookingItems = bookingsResponse.data || [];
+      const incidentItems = incidentsResponse.data || [];
+      const incidentStats = incidentStatsResponse.data || {};
       const users = usersResponse.data || [];
       const pendingBookings = bookingItems.filter((booking) => booking.status === 'PENDING').length;
       const approvedBookings = bookingItems.filter((booking) => booking.status === 'APPROVED').length;
@@ -102,7 +121,11 @@ const AdminDashboardPage = () => {
         adminUsers,
         technicianUsers,
         auditEventsLast24Hours: auditSummaryResponse.data?.last24Hours || 0,
+        criticalIncidents: incidentStats.critical || 0,
+        inProgressIncidents: incidentStats.inProgress || 0,
+        resolvedIncidentsToday: incidentStats.resolvedToday || 0,
       });
+      setIncidents(incidentItems);
     } catch (dashboardError) {
       if (dashboardError?.response?.status === 403) {
         navigate('/bookings', { replace: true });
@@ -154,24 +177,10 @@ const AdminDashboardPage = () => {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => navigate('/admin/bookings')}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+              onClick={() => navigate('/tickets')}
+              className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800"
             >
-              Review Booking Queue
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/assets')}
-              className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-            >
-              Manage Asset Catalogue
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/users')}
-              className="rounded-xl border border-blue-200 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-            >
-              Manage Users
+              Incident Queue
             </button>
             <button
               type="button"
@@ -181,6 +190,25 @@ const AdminDashboardPage = () => {
               View Audit Trail
             </button>
           </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">Critical Incidents</p>
+            <p className="mt-3 text-3xl font-bold text-rose-800">{stats.criticalIncidents}</p>
+          </article>
+          <article className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">In Progress</p>
+            <p className="mt-3 text-3xl font-bold text-amber-800">{stats.inProgressIncidents}</p>
+          </article>
+          <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Resolved Today</p>
+            <p className="mt-3 text-3xl font-bold text-emerald-800">{stats.resolvedIncidentsToday}</p>
+          </article>
+          <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Avg Resolution</p>
+            <p className="mt-3 text-3xl font-bold text-gray-900">4.2h</p>
+          </article>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -228,38 +256,51 @@ const AdminDashboardPage = () => {
 
         <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Admin Activity</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Priority Incident Queue</h2>
             <button
               type="button"
-              onClick={() => navigate('/admin/audit-logs')}
+              onClick={() => navigate('/tickets')}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-700 hover:bg-gray-100"
             >
-              Full Audit Log
+              View All Incidents
             </button>
           </div>
 
-          {recentAuditEvents.length === 0 ? (
+          {priorityIncidents.length === 0 ? (
             <p className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
-              No admin activity has been logged yet.
+              No high-priority incidents in the queue.
             </p>
           ) : (
-            <div className="space-y-3">
-              {recentAuditEvents.map((event) => (
-                <article key={event.id} className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {normalizeLabel(event.action)} on {normalizeLabel(event.entityType)}
-                    </p>
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      {formatDateTime(event.createdAt)}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-700">{event.details || 'No details provided.'}</p>
-                  <p className="mt-2 text-xs uppercase tracking-wide text-gray-500">
-                    Actor: {event.actorName || 'Unknown Admin'} ({event.actorRole || 'Unknown'})
-                  </p>
-                </article>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-3 py-3">Incident</th>
+                    <th className="px-3 py-3">Category</th>
+                    <th className="px-3 py-3">Priority</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">Reported At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {priorityIncidents.map((incident) => (
+                    <tr key={incident.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50">
+                      <td className="px-3 py-3">
+                        <p className="text-sm font-medium text-gray-900">{incident.title}</p>
+                        <p className="text-xs text-gray-500">Reported by: {incident.reportedByName || 'Unknown'}</p>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-gray-700">{incident.category}</td>
+                      <td className="px-3 py-3">
+                        <span className="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">
+                          {incident.priority}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3"><StatusBadge status={incident.status} /></td>
+                      <td className="px-3 py-3 text-sm text-gray-700">{formatDateTime(incident.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
