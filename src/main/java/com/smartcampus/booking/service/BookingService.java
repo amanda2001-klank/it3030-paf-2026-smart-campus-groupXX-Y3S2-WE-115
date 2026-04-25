@@ -222,8 +222,8 @@ public class BookingService {
             throw new UnauthorizedException("You can only cancel your own bookings");
         }
 
-        if (booking.getStatus() != BookingStatus.APPROVED) {
-            throw new IllegalStateException("Only APPROVED bookings can be cancelled. Current status: " + booking.getStatus());
+        if (booking.getStatus() != BookingStatus.APPROVED && booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only APPROVED or PENDING bookings can be cancelled. Current status: " + booking.getStatus());
         }
 
         booking.setStatus(BookingStatus.CANCELLED);

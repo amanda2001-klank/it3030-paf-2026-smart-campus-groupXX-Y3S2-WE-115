@@ -15,6 +15,7 @@ const UserDashboardPage = () => {
     pendingBookings: 0,
     approvedBookings: 0,
   });
+  const [recentBookings, setRecentBookings] = useState([]);
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -36,6 +37,13 @@ const UserDashboardPage = () => {
         pendingBookings: bookingItems.filter((item) => item.status === 'PENDING').length,
         approvedBookings: bookingItems.filter((item) => item.status === 'APPROVED').length,
       });
+
+      // Set recent bookings (newest first)
+      setRecentBookings(
+        [...bookingItems]
+          .sort((a, b) => new Date(b.createdAt || b.startTime) - new Date(a.createdAt || a.startTime))
+          .slice(0, 5)
+      );
     } catch (dashboardError) {
       const message = dashboardError?.response?.data?.message;
       setError(message || 'Failed to load user dashboard data.');
@@ -118,6 +126,60 @@ const UserDashboardPage = () => {
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Approved Bookings</p>
             <p className="mt-3 text-3xl font-bold text-emerald-800">{stats.approvedBookings}</p>
           </article>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Recent Bookings</h2>
+            <button
+              type="button"
+              onClick={() => navigate('/bookings')}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+            >
+              View All
+            </button>
+          </div>
+
+          {recentBookings.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">
+              <p className="text-slate-500">No recent bookings to display.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:bg-slate-100"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-900">{booking.resourceName}</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(booking.startTime).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                        booking.status === 'APPROVED'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : booking.status === 'PENDING'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      {booking.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>

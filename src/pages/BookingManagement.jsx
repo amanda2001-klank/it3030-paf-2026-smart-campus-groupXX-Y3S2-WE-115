@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
 import BookingTable from '../components/booking/BookingTable';
 import BookingDetailsModal from '../components/booking/BookingDetailsModal';
-import CreateBookingModal from '../components/booking/CreateBookingModal';
+import CreateBookingModal from '../components/booking/user/CreateBookingModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import SkeletonLoader from '../components/common/SkeletonLoader';
 import Toast from '../components/common/Toast';
@@ -111,65 +111,6 @@ const BookingManagement = () => {
     setIsModalOpen(false);
   };
 
-  // Handle booking form submission
-  const handleBookingSubmit = async (formData) => {
-    try {
-      // Validate date is not in the past
-      const selectedDate = new Date(formData.date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (selectedDate < today) {
-        setToast({ 
-          message: '📅 Cannot book for past dates. Please select a future date.', 
-          type: 'error' 
-        });
-        return;
-      }
-
-      // Combine date and time fields into ISO format
-      const datetime = `${formData.date}T${formData.startTime}`;
-      const endtime = `${formData.date}T${formData.endTime}`;
-
-      const payload = {
-        resourceId: formData.resourceId || formData.resourceName,
-        resourceName: formData.resourceName,
-        startTime: datetime,
-        endTime: endtime,
-        purpose: formData.purpose,
-        expectedAttendees: parseInt(formData.expectedAttendees),
-      };
-
-      await bookingService.createBooking(payload);
-      setToast({ message: '✅ Booking created successfully!', type: 'success' });
-      setIsModalOpen(false);
-      loadBookings(); // Refresh the list
-    } catch (err) {
-      console.error('Error creating booking:', err);
-      
-      if (err.response?.status === 409) {
-        setToast({ 
-          message: '⚠️ This resource is already booked for the selected time. Please choose a different time or resource.', 
-          type: 'error' 
-        });
-      } else if (err.response?.status === 400) {
-        setToast({ 
-          message: '❌ Invalid booking data. Please check all fields and try again.', 
-          type: 'error' 
-        });
-      } else if (!err.response) {
-        setToast({ 
-          message: '🌐 Unable to connect to server. Please check your connection.', 
-          type: 'error' 
-        });
-      } else {
-        setToast({ 
-          message: '❌ Failed to create booking. Please try again.', 
-          type: 'error' 
-        });
-      }
-    }
-  };
 
   // Handle approve booking
   const handleApprove = async (id) => {
@@ -451,7 +392,7 @@ const BookingManagement = () => {
       <CreateBookingModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleBookingSubmit}
+        onSuccess={loadBookings}
       />
 
       <BookingDetailsModal

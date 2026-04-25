@@ -78,7 +78,12 @@ const UserBookingTable = ({ bookings, onCancel, loading }) => {
 
     if (booking.status === 'PENDING') {
       return (
-        <span className="text-xs text-gray-500 italic">Awaiting Approval</span>
+        <button
+          onClick={() => onCancel(booking.id)}
+          className="px-3 py-1 text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 rounded-lg transition-colors"
+        >
+          Cancel Request
+        </button>
       );
     }
 
