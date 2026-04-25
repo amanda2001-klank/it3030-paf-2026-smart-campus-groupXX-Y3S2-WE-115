@@ -40,4 +40,13 @@ public interface BookingRepository extends MongoRepository<Booking, String> {
     @Query("{ 'resourceId': ?0, 'status': 'APPROVED', 'startTime': { $lt: ?2 }, 'endTime': { $gt: ?1 } }")
     List<Booking> findConflicts(String resourceId, LocalDateTime startTime, LocalDateTime endTime);
 
+    /**
+     * Find bookings whose start time falls in the given date-time window.
+     *
+     * @param startInclusive range start (inclusive)
+     * @param endInclusive range end (inclusive)
+     * @return bookings in the requested window
+     */
+    List<Booking> findByStartTimeBetween(LocalDateTime startInclusive, LocalDateTime endInclusive);
+
 }

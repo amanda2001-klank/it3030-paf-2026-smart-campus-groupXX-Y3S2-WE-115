@@ -2,6 +2,7 @@ package com.smartcampus.booking.controller;
 
 import com.smartcampus.auth.security.AuthenticatedUser;
 import com.smartcampus.audit.service.AdminAuditLogService;
+import com.smartcampus.booking.dto.AssetUsageAnalyticsResponse;
 import com.smartcampus.booking.dto.BookingRequest;
 import com.smartcampus.booking.dto.BookingResponse;
 import com.smartcampus.booking.model.BookingStatus;
@@ -53,11 +54,11 @@ public class BookingController {
     }
 
     /**
-     * Get all bookings (admin only)
+     * Get all bookings (admin and asset manager)
      * Can filter by status using ?status=PENDING|APPROVED|REJECTED|CANCELLED
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ASSET_MANAGER')")
     public ResponseEntity<List<BookingResponse>> getAllBookings(
             @RequestParam(value = "status", required = false) BookingStatus status) {
 
@@ -83,17 +84,30 @@ public class BookingController {
      * Get booking by ID.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ASSET_MANAGER')")
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable String id) {
         BookingResponse booking = bookingService.getBookingById(id);
         return ResponseEntity.ok(booking);
     }
 
     /**
-     * Approve a pending booking (admin only).
+     * Get booking usage analytics grouped by asset.
+     * Supports period=WEEKLY|MONTHLY.
+     */
+    @GetMapping("/analytics/asset-usage")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ASSET_MANAGER')")
+    public ResponseEntity<AssetUsageAnalyticsResponse> getAssetUsageAnalytics(
+            @RequestParam(value = "period", defaultValue = "WEEKLY") String period) {
+
+        AssetUsageAnalyticsResponse response = bookingService.getAssetUsageAnalytics(period);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Approve a pending booking (asset manager only).
      */
     @PutMapping("/{id}/approve")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ASSET_MANAGER')")
     public ResponseEntity<BookingResponse> approveBooking(@PathVariable String id, Authentication authentication) {
         BookingResponse response = bookingService.approveBooking(id);
         adminAuditLogService.logAction(
@@ -107,10 +121,10 @@ public class BookingController {
     }
 
     /**
-     * Reject a pending booking (admin only).
+     * Reject a pending booking (asset manager only).
      */
     @PutMapping("/{id}/reject")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ASSET_MANAGER')")
     public ResponseEntity<BookingResponse> rejectBooking(
             @PathVariable String id,
             @RequestBody Map<String, String> payload,

@@ -61,6 +61,10 @@ const Sidebar = () => {
     const entityType = notification.entityType || '';
 
     if (entityType === 'BOOKING') {
+      if (currentRole === USER_ROLES.ASSET_MANAGER) {
+        return '/dashboard/asset-manager/bookings';
+      }
+
       if (hasAdminAccess && ['BOOKING_CREATED', 'BOOKING_CANCELLED'].includes(notification.type)) {
         return '/admin/bookings';
       }
@@ -276,6 +280,14 @@ const Sidebar = () => {
 
   if (currentRole === USER_ROLES.TECHNICIAN) {
     menuItems.push({ id: 'tech-tickets', label: 'Assigned Tasks', icon: '\u25A9', path: '/dashboard/technician/tickets' });
+  }
+
+  if (currentRole === USER_ROLES.ASSET_MANAGER) {
+    menuItems.push({ id: 'asset-manager-bookings', label: 'Booking Requests', icon: '\u25A4', path: '/dashboard/asset-manager/bookings' });
+  }
+
+  if (hasManagerAccess) {
+    menuItems.push({ id: 'booking-analytics', label: 'Booking Analytics', icon: '\u25A0', path: '/booking-analytics' });
   }
 
   if (hasAdminAccess) {

@@ -1,7 +1,15 @@
 package com.smartcampus.booking.service;
 
+<<<<<<< HEAD
+=======
+import com.smartcampus.auth.model.AppUser;
+import com.smartcampus.auth.repository.AppUserRepository;
+import com.smartcampus.booking.dto.AssetUsageAnalyticsResponse;
+import com.smartcampus.booking.dto.AssetUsageMetricResponse;
+>>>>>>> main
 import com.smartcampus.booking.dto.BookingRequest;
 import com.smartcampus.booking.dto.BookingResponse;
+import com.smartcampus.booking.exception.BadRequestException;
 import com.smartcampus.booking.exception.ConflictException;
 import com.smartcampus.booking.exception.ResourceNotFoundException;
 import com.smartcampus.booking.exception.UnauthorizedException;
@@ -15,7 +23,16 @@ import com.smartcampus.notification.service.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -201,4 +218,149 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
         return BookingResponse.fromBooking(booking);
     }
+<<<<<<< HEAD
+=======
+
+    /**
+     * Get a booking entity by ID (internal use for PDF generation)
+     * 
+     * @param id the booking ID
+     * @return Booking entity
+     * @throws ResourceNotFoundException if booking not found
+     */
+    public Booking getBookingEntity(String id) {
+        return bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+    }
+
+    /**
+     * Get asset usage analytics for the selected period.
+     * Supported periods: WEEKLY, MONTHLY.
+     *
+     * @param period analytics period
+     * @return analytics summary grouped by resource
+     */
+    public AssetUsageAnalyticsResponse getAssetUsageAnalytics(String period) {
+        String normalizedPeriod = normalizePeriod(period);
+
+        LocalDateTime rangeEnd = LocalDateTime.now();
+        LocalDateTime rangeStart;
+        if ("MONTHLY".equals(normalizedPeriod)) {
+            rangeStart = LocalDate.now().minusDays(29).atStartOfDay();
+        } else {
+            rangeStart = LocalDate.now().minusDays(6).atStartOfDay();
+        }
+
+        List<Booking> bookings = bookingRepository.findByStartTimeBetween(rangeStart, rangeEnd);
+        Map<String, UsageAggregate> groupedUsage = new HashMap<>();
+
+        for (Booking booking : bookings) {
+            String resourceId = booking.getResourceId() == null || booking.getResourceId().isBlank()
+                    ? "UNKNOWN"
+                    : booking.getResourceId();
+            UsageAggregate aggregate = groupedUsage.computeIfAbsent(
+                    resourceId,
+                    key -> new UsageAggregate(resourceId, booking.getResourceName())
+            );
+            aggregate.resourceName = booking.getResourceName();
+            aggregate.totalBookings++;
+            aggregate.bookedHours += bookingDurationHours(booking);
+
+            if (booking.getStatus() == BookingStatus.APPROVED) {
+                aggregate.approvedBookings++;
+            } else if (booking.getStatus() == BookingStatus.PENDING) {
+                aggregate.pendingBookings++;
+            } else if (booking.getStatus() == BookingStatus.REJECTED) {
+                aggregate.rejectedBookings++;
+            } else if (booking.getStatus() == BookingStatus.CANCELLED) {
+                aggregate.cancelledBookings++;
+            }
+        }
+
+        long totalBookings = bookings.size();
+        double totalBookedHours = roundToTwoDecimal(
+                groupedUsage.values().stream().mapToDouble(usage -> usage.bookedHours).sum()
+        );
+
+        List<AssetUsageMetricResponse> metrics = new ArrayList<>();
+        for (UsageAggregate usage : groupedUsage.values()) {
+            double sharePercent = totalBookings == 0
+                    ? 0.0
+                    : (usage.totalBookings * 100.0) / totalBookings;
+
+            metrics.add(new AssetUsageMetricResponse(
+                    usage.resourceId,
+                    usage.resourceName == null || usage.resourceName.isBlank() ? "Unknown Asset" : usage.resourceName,
+                    usage.totalBookings,
+                    usage.approvedBookings,
+                    usage.pendingBookings,
+                    usage.rejectedBookings,
+                    usage.cancelledBookings,
+                    roundToTwoDecimal(usage.bookedHours),
+                    roundToTwoDecimal(sharePercent)
+            ));
+        }
+
+        metrics.sort(
+                Comparator.comparingLong(AssetUsageMetricResponse::getTotalBookings)
+                        .thenComparingDouble(AssetUsageMetricResponse::getBookedHours)
+                        .reversed()
+        );
+
+        return new AssetUsageAnalyticsResponse(
+                normalizedPeriod,
+                rangeStart,
+                rangeEnd,
+                LocalDateTime.now(),
+                totalBookings,
+                totalBookedHours,
+                metrics
+        );
+    }
+
+    private String normalizePeriod(String period) {
+        if (period == null || period.isBlank()) {
+            return "WEEKLY";
+        }
+
+        String normalized = period.trim().toUpperCase();
+        if (!"WEEKLY".equals(normalized) && !"MONTHLY".equals(normalized)) {
+            throw new BadRequestException("Invalid period. Use WEEKLY or MONTHLY.");
+        }
+        return normalized;
+    }
+
+    private double bookingDurationHours(Booking booking) {
+        if (booking.getStartTime() == null || booking.getEndTime() == null) {
+            return 0.0;
+        }
+
+        Duration duration = Duration.between(booking.getStartTime(), booking.getEndTime());
+        if (duration.isNegative() || duration.isZero()) {
+            return 0.0;
+        }
+
+        return duration.toMinutes() / 60.0;
+    }
+
+    private double roundToTwoDecimal(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private static class UsageAggregate {
+        private final String resourceId;
+        private String resourceName;
+        private long totalBookings;
+        private long approvedBookings;
+        private long pendingBookings;
+        private long rejectedBookings;
+        private long cancelledBookings;
+        private double bookedHours;
+
+        private UsageAggregate(String resourceId, String resourceName) {
+            this.resourceId = resourceId;
+            this.resourceName = resourceName;
+        }
+    }
+>>>>>>> main
 }

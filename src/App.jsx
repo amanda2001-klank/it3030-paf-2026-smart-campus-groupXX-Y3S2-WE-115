@@ -9,10 +9,12 @@ import AssetListDetailPage from './pages/AssetListDetailPage';
 import AdminBookingPage from './pages/AdminBookingPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminAuditLogPage from './pages/AdminAuditLogPage';
+import BookingAnalyticsPage from './pages/BookingAnalyticsPage';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import RegisterPage from './pages/RegisterPage';
 import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
+import BookingManagement from './pages/BookingManagement';
 import UserBookingPage from './pages/UserBookingPage';
 import UserDashboardPage from './pages/UserDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
@@ -158,10 +160,26 @@ const ProtectedShell = () => {
             }
           />
           <Route
+            path="/dashboard/asset-manager/bookings"
+            element={
+              <RoleRoute allowedRoles={[USER_ROLES.ASSET_MANAGER]}>
+                <BookingManagement />
+              </RoleRoute>
+            }
+          />
+          <Route
             path="/admin/bookings"
             element={
               <RoleRoute allowedRoles={[USER_ROLES.ADMIN]}>
                 <AdminBookingPage />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/booking-analytics"
+            element={
+              <RoleRoute allowedRoles={MANAGER_ROLES}>
+                <BookingAnalyticsPage />
               </RoleRoute>
             }
           />

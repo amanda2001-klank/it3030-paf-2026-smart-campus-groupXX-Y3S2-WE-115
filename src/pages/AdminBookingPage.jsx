@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBookingTable from '../components/booking/admin/AdminBookingTable';
-import RejectModal from '../components/booking/admin/RejectModal';
+import BookingDetailsModal from '../components/booking/BookingDetailsModal';
 import Toast from '../components/common/Toast';
 import * as bookingService from '../services/bookingService';
 
@@ -18,10 +18,8 @@ const AdminBookingPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('all');
-
-  // Reject modal state
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Toast notification state
   const [toast, setToast] = useState({ message: '', type: '' });
@@ -70,51 +68,14 @@ const AdminBookingPage = () => {
     setActiveTab(tab);
   };
 
-  // Handle approve booking
-  const handleApprove = async (id) => {
-    if (!window.confirm('Are you sure you want to approve this booking?')) {
-      return;
-    }
-
+  const handleViewDetails = async (bookingId) => {
     try {
-      await bookingService.approveBooking(id);
-      setToast({
-        message: 'Booking approved successfully!',
-        type: 'success',
-      });
-      loadBookings(activeTab === 'all' ? null : activeTab);
+      const response = await bookingService.getBookingById(bookingId);
+      setSelectedBooking(response.data || null);
+      setDetailsOpen(true);
     } catch (err) {
-      console.error('Error approving booking:', err);
       setToast({
-        message:
-          err.response?.data?.message || 'Failed to approve booking. Try again.',
-        type: 'error',
-      });
-    }
-  };
-
-  // Handle reject booking (open modal)
-  const handleRejectClick = (id) => {
-    setSelectedBookingId(id);
-    setRejectModalOpen(true);
-  };
-
-  // Handle reject submission (called from RejectModal)
-  const handleRejectSubmit = async (reason) => {
-    try {
-      await bookingService.rejectBooking(selectedBookingId, reason);
-      setToast({
-        message: 'Booking rejected successfully!',
-        type: 'success',
-      });
-      setRejectModalOpen(false);
-      setSelectedBookingId(null);
-      loadBookings(activeTab === 'all' ? null : activeTab);
-    } catch (err) {
-      console.error('Error rejecting booking:', err);
-      setToast({
-        message:
-          err.response?.data?.message || 'Failed to reject booking. Try again.',
+        message: err.response?.data?.message || 'Failed to load booking details.',
         type: 'error',
       });
     }
@@ -159,7 +120,7 @@ const AdminBookingPage = () => {
                 Booking Requests
               </h1>
               <p className="text-gray-600 text-sm mt-1">
-                Manage and approve resource booking requests
+                View resource booking requests
               </p>
             </div>
 
@@ -217,21 +178,18 @@ const AdminBookingPage = () => {
         {/* Bookings Table */}
         <AdminBookingTable
           bookings={filteredBookings}
-          onApprove={handleApprove}
-          onReject={handleRejectClick}
           loading={loading}
+          onViewDetails={handleViewDetails}
         />
       </div>
 
-      {/* Reject Modal */}
-      <RejectModal
-        isOpen={rejectModalOpen}
+      <BookingDetailsModal
+        isOpen={detailsOpen}
+        booking={selectedBooking}
         onClose={() => {
-          setRejectModalOpen(false);
-          setSelectedBookingId(null);
+          setDetailsOpen(false);
+          setSelectedBooking(null);
         }}
-        onConfirm={handleRejectSubmit}
-        bookingId={selectedBookingId}
       />
 
       {/* Toast Notification */}

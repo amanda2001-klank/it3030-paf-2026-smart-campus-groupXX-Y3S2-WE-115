@@ -100,6 +100,13 @@ const AssetManagerDashboardPage = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate('/dashboard/asset-manager/bookings')}
+              className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
+            >
+              Review Booking Requests
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/bookings')}
               className="rounded-xl border border-indigo-200 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800"
             >

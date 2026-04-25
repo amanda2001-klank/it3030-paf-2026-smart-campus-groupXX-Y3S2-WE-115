@@ -5,14 +5,18 @@
 import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
 import BookingTable from '../components/booking/BookingTable';
+import BookingDetailsModal from '../components/booking/BookingDetailsModal';
 import CreateBookingModal from '../components/booking/CreateBookingModal';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import SkeletonLoader from '../components/common/SkeletonLoader';
 import Toast from '../components/common/Toast';
 import * as bookingService from '../services/bookingService';
-import { getCurrentUser } from '../utils/auth';
+import { getCurrentUser, USER_ROLES } from '../utils/auth';
 
 const BookingManagement = () => {
+  const currentRole = getCurrentUser().userRole || USER_ROLES.USER;
+  const canApproveBookings = currentRole === USER_ROLES.ASSET_MANAGER;
+
   // Track active filter tab
   const [activeTab, setActiveTab] = useState('all');
   const [activeMainTab, setActiveMainTab] = useState('requests');
@@ -21,10 +25,11 @@ const BookingManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isApproving, setIsApproving] = useState(null);
   const [isRejecting, setIsRejecting] = useState(null);
   const [isCancelling, setIsCancelling] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Main navigation tabs
   const mainTabs = [
@@ -44,8 +49,6 @@ const BookingManagement = () => {
   // Load bookings on component mount and when filters change
   useEffect(() => {
     loadBookings();
-    const userRole = getCurrentUser().userRole || 'USER';
-    setIsAdmin(userRole === 'ADMIN');
   }, [activeTab]);
 
   // Fetch bookings based on active tab
@@ -240,12 +243,26 @@ const BookingManagement = () => {
     }
   };
 
+  const handleViewDetails = async (bookingId) => {
+    try {
+      const response = await bookingService.getBookingById(bookingId);
+      setSelectedBooking(response.data || null);
+      setDetailsOpen(true);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setToast({ message: '❌ Booking not found', type: 'error' });
+      } else {
+        setToast({ message: '❌ Failed to load booking details', type: 'error' });
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Smart Campus Hub</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Booking Management</h1>
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
@@ -276,7 +293,9 @@ const BookingManagement = () => {
       {/* Main Content */}
       <div className="p-8">
         {/* Page Title */}
-        <h2 className="text-xl font-bold text-gray-900 mb-6">Booking Management</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-6">
+          {currentRole === USER_ROLES.ASSET_MANAGER ? 'Asset Manager Booking Requests' : 'Booking Management'}
+        </h2>
 
         {/* Filter Tabs */}
         <div className="mb-6 flex space-x-6 border-b border-gray-200">
@@ -402,7 +421,9 @@ const BookingManagement = () => {
             onApprove={handleApprove}
             onReject={handleReject}
             onCancel={handleCancel}
-            isAdmin={isAdmin}
+            onViewDetails={handleViewDetails}
+            canApprove={canApproveBookings}
+            canReject={canApproveBookings}
             isApproving={isApproving}
             isRejecting={isRejecting}
             isCancelling={isCancelling}
@@ -423,6 +444,7 @@ const BookingManagement = () => {
             <p className="text-gray-600 text-sm">Utilization data is being loaded...</p>
           </div>
         </div>
+
       </div>
 
       {/* Create Booking Modal */}
@@ -430,6 +452,15 @@ const BookingManagement = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleBookingSubmit}
+      />
+
+      <BookingDetailsModal
+        isOpen={detailsOpen}
+        booking={selectedBooking}
+        onClose={() => {
+          setDetailsOpen(false);
+          setSelectedBooking(null);
+        }}
       />
 
       {/* Toast Notification */}

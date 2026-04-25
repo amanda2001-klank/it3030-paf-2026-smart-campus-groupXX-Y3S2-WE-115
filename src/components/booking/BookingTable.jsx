@@ -6,7 +6,9 @@ const BookingTable = ({
   onApprove, 
   onReject, 
   onCancel, 
-  isAdmin,
+  onViewDetails,
+  canApprove = false,
+  canReject = false,
   isApproving = null,
   isRejecting = null,
   isCancelling = null
@@ -35,38 +37,49 @@ const BookingTable = ({
 
   // Render action buttons based on status and isAdmin flag
   const renderActions = (booking) => {
-    // Admin actions for PENDING bookings
-    if (booking.status === 'PENDING' && isAdmin) {
+    // Manager actions for PENDING bookings
+    if (booking.status === 'PENDING' && (canApprove || canReject)) {
       return (
         <div className="flex space-x-2">
           <button
-            onClick={() => onApprove(booking.id)}
-            disabled={isApproving === booking.id || isRejecting === booking.id}
-            className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            type="button"
+            onClick={() => onViewDetails(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 rounded transition-colors"
           >
-            {isApproving === booking.id ? (
-              <>
-                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Approving...
-              </>
-            ) : (
-              '✓ Approve'
-            )}
+            View
           </button>
-          <button
-            onClick={() => onReject(booking.id)}
-            disabled={isApproving === booking.id || isRejecting === booking.id}
-            className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-          >
-            {isRejecting === booking.id ? (
-              <>
-                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Rejecting...
-              </>
-            ) : (
-              '✕ Reject'
-            )}
-          </button>
+          {canApprove ? (
+            <button
+              onClick={() => onApprove(booking.id)}
+              disabled={isApproving === booking.id || isRejecting === booking.id}
+              className="px-3 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isApproving === booking.id ? (
+                <>
+                  <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Approving...
+                </>
+              ) : (
+                '✓ Approve'
+              )}
+            </button>
+          ) : null}
+          {canReject ? (
+            <button
+              onClick={() => onReject(booking.id)}
+              disabled={isApproving === booking.id || isRejecting === booking.id}
+              className="px-3 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isRejecting === booking.id ? (
+                <>
+                  <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Rejecting...
+                </>
+              ) : (
+                '✕ Reject'
+              )}
+            </button>
+          ) : null}
         </div>
       );
     }
@@ -74,25 +87,40 @@ const BookingTable = ({
     // User can cancel their own APPROVED bookings
     if (booking.status === 'APPROVED') {
       return (
-        <button
-          onClick={() => onCancel(booking.id)}
-          disabled={isCancelling === booking.id}
-          className="px-3 py-1 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-        >
-          {isCancelling === booking.id ? (
-            <>
-              <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Cancelling...
-            </>
-          ) : (
-            '✕ Cancel'
-          )}
-        </button>
+        <div className="flex space-x-2">
+          <button
+            type="button"
+            onClick={() => onViewDetails(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 rounded transition-colors"
+          >
+            View
+          </button>
+          <button
+            onClick={() => onCancel(booking.id)}
+            disabled={isCancelling === booking.id}
+            className="px-3 py-1 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            {isCancelling === booking.id ? (
+              <>
+                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Cancelling...
+              </>
+            ) : (
+              '✕ Cancel'
+            )}
+          </button>
+        </div>
       );
     }
     
     return (
-      <span className="text-xs text-gray-500">No actions available</span>
+      <button
+        type="button"
+        onClick={() => onViewDetails(booking.id)}
+        className="px-3 py-1 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 rounded transition-colors"
+      >
+        View
+      </button>
     );
   };
 

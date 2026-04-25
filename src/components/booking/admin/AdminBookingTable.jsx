@@ -5,7 +5,7 @@ import StatusBadge from '../../StatusBadge';
 // ADMIN BOOKING TABLE - Table for displaying and managing all bookings
 // ============================================================================
 
-const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
+const AdminBookingTable = ({ bookings, loading, onViewDetails }) => {
   // Format date and time
   const formatDateTime = (isoString) => {
     const date = new Date(isoString);
@@ -167,7 +167,6 @@ const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
                   'en-US',
                   { hour: '2-digit', minute: '2-digit' }
                 );
-                const isPending = booking.status.toLowerCase() === 'pending';
                 const requestedByName = booking.requestedByName || 'Unknown User';
                 const avatarColor = getAvatarColor(requestedByName);
                 const initials = getInitials(requestedByName);
@@ -229,24 +228,13 @@ const AdminBookingTable = ({ bookings, onApprove, onReject, loading }) => {
 
                     {/* Actions */}
                     <td className="px-6 py-4">
-                      {isPending ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => onApprove(booking.id)}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => onReject(booking.id)}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 rounded-md hover:bg-red-600 transition-colors"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => onViewDetails(booking.id)}
+                        className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                      >
+                        View Details
+                      </button>
                     </td>
                   </tr>
                 );

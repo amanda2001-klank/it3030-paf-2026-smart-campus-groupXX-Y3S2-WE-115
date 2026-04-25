@@ -64,7 +64,18 @@ export const getBookingById = (id) => {
 };
 
 /**
- * Approve a pending booking request (Admin only)
+ * Get booking analytics grouped by asset
+ * @param {string} period - WEEKLY or MONTHLY
+ * @returns {Promise} Analytics payload with totals and per-asset metrics
+ */
+export const getAssetUsageAnalytics = (period = 'WEEKLY') => {
+  return apiClient.get('/api/bookings/analytics/asset-usage', {
+    params: { period: period.toUpperCase() },
+  });
+};
+
+/**
+ * Approve a pending booking request (Asset Manager only)
  * @param {string} id - Booking ID
  * @returns {Promise} Updated booking object with status APPROVED
  */
@@ -73,7 +84,7 @@ export const approveBooking = (id) => {
 };
 
 /**
- * Reject a pending booking request (Admin only)
+ * Reject a pending booking request (Asset Manager only)
  * @param {string} id - Booking ID
  * @param {string} reason - Rejection reason
  * @returns {Promise} Updated booking object with status REJECTED
