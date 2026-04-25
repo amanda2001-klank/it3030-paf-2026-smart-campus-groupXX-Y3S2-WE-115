@@ -14,6 +14,7 @@ const StatusBadge = ({ status }) => {
     OPEN: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '\u25CB' },
     IN_PROGRESS: { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '\u2699' },
     RESOLVED: { bg: 'bg-gray-100', text: 'text-gray-600', icon: '\u2713' },
+    CLOSED: { bg: 'bg-slate-100', text: 'text-slate-600', icon: '\u1F512' },
   };
 
   const config = statusConfig[status] || statusConfig.PENDING;

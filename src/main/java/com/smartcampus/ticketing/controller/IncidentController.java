@@ -91,12 +91,12 @@ public class IncidentController {
         
         // Admins and Technicians can always update.
         // Reporters can only update if it's still OPEN and they are the owner.
-        boolean isStaff = "ADMIN".equals(actor.getRole()) || "TECHNICIAN".equals(actor.getRole());
+        boolean isStaff = "ADMIN".equalsIgnoreCase(actor.getRole()) || "TECHNICIAN".equalsIgnoreCase(actor.getRole());
         if (!isStaff) {
             if (!existing.getReportedById().equals(actor.getUserId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            if (!"OPEN".equals(existing.getStatus())) {
+            if (!"OPEN".equalsIgnoreCase(existing.getStatus().name())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             }
         }
@@ -112,7 +112,7 @@ public class IncidentController {
             Authentication authentication) {
         AuthenticatedUser actor = currentUser(authentication);
         // In a real app, you'd check roles for isStaff
-        boolean isStaff = "ADMIN".equals(actor.getRole()) || "TECHNICIAN".equals(actor.getRole());
+        boolean isStaff = "ADMIN".equalsIgnoreCase(actor.getRole()) || "TECHNICIAN".equalsIgnoreCase(actor.getRole());
         return ResponseEntity.ok(incidentService.addComment(id, request, actor.getUserId(), actor.getUserName(), isStaff));
     }
 
@@ -122,12 +122,12 @@ public class IncidentController {
         AuthenticatedUser actor = currentUser(authentication);
         IncidentResponse existing = incidentService.getIncidentById(id);
 
-        boolean isAdmin = "ADMIN".equals(actor.getRole());
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(actor.getRole());
         if (!isAdmin) {
             if (!existing.getReportedById().equals(actor.getUserId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            if (!"OPEN".equals(existing.getStatus())) {
+            if (!"OPEN".equalsIgnoreCase(existing.getStatus().name())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
         }

@@ -53,17 +53,19 @@ const TechnicianTicketsPage = () => {
     setUpdating(true);
     try {
       await updateIncident(selectedIncident.id, { 
-        title: selectedIncident.title,
-        description: selectedIncident.description,
-        category: selectedIncident.category,
-        priority: selectedIncident.priority,
+        title: selectedIncident.title || 'Untitled Ticket',
+        description: selectedIncident.description || 'No description provided',
+        category: selectedIncident.category || 'TECHNICAL',
+        priority: selectedIncident.priority || 'MEDIUM',
+        assignedTechnicianId: selectedIncident.assignedTechnicianId,
         status 
       });
       setSelectedIncident(prev => ({ ...prev, status }));
       setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? { ...inc, status } : inc));
     } catch (error) {
         console.error('Failed to update status:', error);
-        alert('Failed to update status. Please ensure all required fields are valid.');
+        const errorMsg = error.response?.data?.message || 'Please check if all fields are valid.';
+        alert(`Failed to update status: ${errorMsg}`);
     } finally {
       setUpdating(false);
     }
