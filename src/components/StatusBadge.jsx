@@ -10,6 +10,10 @@ const StatusBadge = ({ status }) => {
     OUT_OF_SERVICE: { bg: 'bg-red-100', text: 'text-red-800', icon: '\u26A0' },
     MAINTENANCE: { bg: 'bg-amber-100', text: 'text-amber-800', icon: '\u2699' },
     INACTIVE: { bg: 'bg-gray-100', text: 'text-gray-600', icon: '\u25CF' },
+    // Incident Statuses
+    OPEN: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '\u25CB' },
+    IN_PROGRESS: { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '\u2699' },
+    RESOLVED: { bg: 'bg-gray-100', text: 'text-gray-600', icon: '\u2713' },
   };
 
   const config = statusConfig[status] || statusConfig.PENDING;
