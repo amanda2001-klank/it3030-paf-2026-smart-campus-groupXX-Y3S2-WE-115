@@ -81,6 +81,18 @@ const AdminBookingPage = () => {
     }
   };
 
+  const handleDownloadReceipt = async (id) => {
+    try {
+      setToast({ message: 'Downloading receipt...', type: 'info' });
+      await bookingService.downloadReceipt(id);
+    } catch (err) {
+      setToast({
+        message: err.response?.data?.message || 'Failed to download receipt.',
+        type: 'error',
+      });
+    }
+  };
+
   // Calculate pending count for live badge
   const pendingCount = bookings.filter(
     (b) => b.status.toLowerCase() === 'pending'
@@ -180,12 +192,14 @@ const AdminBookingPage = () => {
           bookings={filteredBookings}
           loading={loading}
           onViewDetails={handleViewDetails}
+          onDownloadReceipt={handleDownloadReceipt}
         />
       </div>
 
       <BookingDetailsModal
         isOpen={detailsOpen}
         booking={selectedBooking}
+        onDownloadReceipt={handleDownloadReceipt}
         onClose={() => {
           setDetailsOpen(false);
           setSelectedBooking(null);

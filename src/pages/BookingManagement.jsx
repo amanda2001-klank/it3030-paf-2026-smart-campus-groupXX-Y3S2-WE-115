@@ -184,6 +184,16 @@ const BookingManagement = () => {
     }
   };
 
+  const handleDownloadReceipt = async (id) => {
+    try {
+      setToast({ message: '⏳ Downloading receipt...', type: 'info' });
+      await bookingService.downloadReceipt(id);
+    } catch (err) {
+      console.error('Error downloading receipt:', err);
+      setToast({ message: '❌ Failed to download receipt', type: 'error' });
+    }
+  };
+
   const handleViewDetails = async (bookingId) => {
     try {
       const response = await bookingService.getBookingById(bookingId);
@@ -363,6 +373,7 @@ const BookingManagement = () => {
             onReject={handleReject}
             onCancel={handleCancel}
             onViewDetails={handleViewDetails}
+            onDownloadReceipt={handleDownloadReceipt}
             canApprove={canApproveBookings}
             canReject={canApproveBookings}
             isApproving={isApproving}
@@ -398,6 +409,7 @@ const BookingManagement = () => {
       <BookingDetailsModal
         isOpen={detailsOpen}
         booking={selectedBooking}
+        onDownloadReceipt={handleDownloadReceipt}
         onClose={() => {
           setDetailsOpen(false);
           setSelectedBooking(null);

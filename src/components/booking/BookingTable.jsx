@@ -7,6 +7,7 @@ const BookingTable = ({
   onReject, 
   onCancel, 
   onViewDetails,
+  onDownloadReceipt,
   canApprove = false,
   canReject = false,
   isApproving = null,
@@ -94,6 +95,13 @@ const BookingTable = ({
             className="px-3 py-1 text-xs font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 rounded transition-colors"
           >
             View
+          </button>
+          <button
+            type="button"
+            onClick={() => onDownloadReceipt(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+          >
+            Receipt
           </button>
           <button
             onClick={() => onCancel(booking.id)}

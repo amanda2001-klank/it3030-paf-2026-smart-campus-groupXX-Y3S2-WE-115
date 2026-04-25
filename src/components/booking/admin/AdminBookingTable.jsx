@@ -5,7 +5,7 @@ import StatusBadge from '../../StatusBadge';
 // ADMIN BOOKING TABLE - Table for displaying and managing all bookings
 // ============================================================================
 
-const AdminBookingTable = ({ bookings, loading, onViewDetails }) => {
+const AdminBookingTable = ({ bookings, loading, onViewDetails, onDownloadReceipt }) => {
   // Format date and time
   const formatDateTime = (isoString) => {
     const date = new Date(isoString);
@@ -228,13 +228,24 @@ const AdminBookingTable = ({ bookings, loading, onViewDetails }) => {
 
                     {/* Actions */}
                     <td className="px-6 py-4">
-                      <button
-                        type="button"
-                        onClick={() => onViewDetails(booking.id)}
-                        className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onViewDetails(booking.id)}
+                          className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                        >
+                          Details
+                        </button>
+                        {booking.status === 'APPROVED' && (
+                          <button
+                            type="button"
+                            onClick={() => onDownloadReceipt(booking.id)}
+                            className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                          >
+                            Receipt
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -4,7 +4,7 @@ import React from 'react';
 // USER BOOKING TABLE - Display user's bookings with cancel action
 // ============================================================================
 
-const UserBookingTable = ({ bookings, onCancel, loading }) => {
+const UserBookingTable = ({ bookings, onCancel, onDownloadReceipt, loading }) => {
   // Format date and time: "Oct 24, 2023 | 09:00 – 11:30"
   const formatDateTime = (startTime, endTime) => {
     const startDate = new Date(startTime);
@@ -67,12 +67,20 @@ const UserBookingTable = ({ bookings, onCancel, loading }) => {
   const renderAction = (booking) => {
     if (booking.status === 'APPROVED') {
       return (
-        <button
-          onClick={() => onCancel(booking.id)}
-          className="px-3 py-1 text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 rounded-lg transition-colors"
-        >
-          Cancel
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onDownloadReceipt(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          >
+            Receipt
+          </button>
+          <button
+            onClick={() => onCancel(booking.id)}
+            className="px-3 py-1 text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       );
     }
 

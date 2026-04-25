@@ -93,4 +93,27 @@ export const rejectBooking = (id, reason) => {
   return apiClient.put(`/api/bookings/${id}/reject`, { reason });
 };
 
+/**
+ * Download booking receipt PDF
+ * @param {string} id - Booking ID
+ * @returns {Promise} Resolves when download starts
+ */
+export const downloadReceipt = async (id) => {
+  const response = await apiClient.get(`/api/bookings/${id}/receipt`, {
+    responseType: 'blob',
+  });
+
+  // Create a URL for the blob
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Booking_Receipt_${id}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+
+  // Cleanup
+  link.parentNode.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 export default apiClient;

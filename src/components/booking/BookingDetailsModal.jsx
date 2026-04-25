@@ -14,14 +14,27 @@ const formatDateTime = (value) => {
   });
 };
 
-const BookingDetailsModal = ({ isOpen, booking, onClose }) => {
+const BookingDetailsModal = ({ isOpen, booking, onClose, onDownloadReceipt }) => {
   if (!isOpen || !booking) return null;
+
+  const isApproved = booking.status === 'APPROVED';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-bold text-gray-900">Booking Details</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-gray-900">Booking Details</h2>
+            {isApproved && (
+              <button
+                type="button"
+                onClick={() => onDownloadReceipt(booking.id)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+              >
+                <span>Download Receipt</span>
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}

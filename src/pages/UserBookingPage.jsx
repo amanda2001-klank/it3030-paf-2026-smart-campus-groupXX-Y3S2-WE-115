@@ -96,6 +96,20 @@ const UserBookingPage = () => {
     }
   };
 
+  // Handle download receipt
+  const handleDownloadReceipt = async (id) => {
+    try {
+      setToast({ message: 'Downloading receipt...', type: 'info' });
+      await bookingService.downloadReceipt(id);
+    } catch (err) {
+      setToast({ 
+        message: err.response?.data?.message || 'Failed to download receipt',
+        type: 'error'
+      });
+      console.error('Error downloading receipt:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -167,6 +181,7 @@ const UserBookingPage = () => {
           <UserBookingTable
             bookings={filteredBookings}
             onCancel={handleCancel}
+            onDownloadReceipt={handleDownloadReceipt}
             loading={loading}
           />
         )}
