@@ -75,10 +75,12 @@ const TechnicianTicketsPage = () => {
     if (!selectedIncident) return;
     try {
       const res = await addComment(selectedIncident.id, message);
-      setSelectedIncident(prev => ({
-        ...prev,
-        discussion: res.data.discussion
-      }));
+      setSelectedIncident(prev => {
+        const updated = { ...prev, discussion: res.data.discussion };
+        // Update the list too so comments persist when switching tabs
+        setIncidents(list => list.map(inc => inc.id === updated.id ? updated : inc));
+        return updated;
+      });
     } catch (error) {
       console.error('Failed to add comment:', error);
     }

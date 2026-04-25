@@ -24,17 +24,20 @@ const DiscussionSection = ({ discussions = [], onSendMessage }) => {
       <div className="flex-1 space-y-6 overflow-y-auto mb-6 pr-2 custom-scrollbar">
         {discussions.map((msg, index) => (
           <div key={index} className="flex gap-4">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${msg.isStaff ? 'bg-indigo-600' : 'bg-slate-800'}`}>
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm ${msg.isStaff ? 'bg-blue-600' : 'bg-slate-700'}`}>
               {msg.authorName ? msg.authorName.split(' ').map(n => n[0]).join('') : 'U'}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-bold text-slate-900">{msg.authorName}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-xs font-bold text-slate-900 truncate">{msg.authorName}</span>
+                {msg.isStaff && (
+                  <span className="bg-blue-50 text-blue-600 text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border border-blue-100">Staff</span>
+                )}
                 <span className="text-[10px] font-medium text-slate-400">
-                  {msg.timestamp ? new Date(msg.timestamp).toLocaleString() : ''}
+                  {msg.timestamp ? new Date(msg.timestamp).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }) : ''}
                 </span>
               </div>
-              <div className={`rounded-2xl p-4 text-sm leading-relaxed ${msg.isStaff ? 'bg-slate-50 text-slate-700' : 'bg-blue-50 text-slate-700'}`}>
+              <div className={`rounded-2xl p-4 text-sm leading-relaxed shadow-sm ${msg.isStaff ? 'bg-white border border-blue-50 text-slate-700' : 'bg-slate-50 text-slate-700'}`}>
                 {msg.message}
               </div>
             </div>

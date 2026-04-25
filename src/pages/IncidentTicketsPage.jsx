@@ -102,10 +102,12 @@ const IncidentTicketsPage = () => {
     if (!selectedIncident) return;
     try {
       const res = await addComment(selectedIncident.id, message);
-      setSelectedIncident(prev => ({
-        ...prev,
-        discussion: res.data.discussion // Use the updated discussion list from response
-      }));
+      setSelectedIncident(prev => {
+        const updated = { ...prev, discussion: res.data.discussion };
+        // Update the incident in the list as well to persist the discussion
+        setIncidents(list => list.map(inc => inc.id === updated.id ? updated : inc));
+        return updated;
+      });
     } catch (error) {
       console.error('Failed to add comment:', error);
     }

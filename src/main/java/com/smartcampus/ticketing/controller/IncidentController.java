@@ -47,10 +47,22 @@ public class IncidentController {
     @GetMapping("/media/**")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> previewMedia(jakarta.servlet.http.HttpServletRequest request) {
-        String path = request.getRequestURI().split("/media/")[1];
-        Resource resource = incidentMediaStorageService.loadMediaAsResource(path);
+        String pathStr = request.getRequestURI().split("/media/")[1];
+        Resource resource = incidentMediaStorageService.loadMediaAsResource(pathStr);
+        
+        String contentType;
+        try {
+            contentType = java.nio.file.Files.probeContentType(java.nio.file.Paths.get(pathStr));
+        } catch (java.io.IOException e) {
+            contentType = MediaType.IMAGE_JPEG_VALUE;
+        }
+        
+        if (contentType == null) {
+            contentType = MediaType.IMAGE_JPEG_VALUE;
+        }
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_JPEG_VALUE) // Simplified
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(resource);
     }
 

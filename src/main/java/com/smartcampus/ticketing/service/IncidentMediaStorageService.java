@@ -25,7 +25,7 @@ public class IncidentMediaStorageService {
 
     private static final int MAX_FILES = 3;
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif", "bmp", "svg", "tiff");
 
     private final Path uploadRootPath;
 
@@ -101,7 +101,7 @@ public class IncidentMediaStorageService {
         }
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());
         if (extension == null || !ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-            throw new BadRequestException("Unsupported file type. Allowed: JPG, PNG, WEBP");
+            throw new BadRequestException("Unsupported file type. Allowed: JPG, PNG, WEBP, GIF, BMP, SVG, TIFF");
         }
     }
 
